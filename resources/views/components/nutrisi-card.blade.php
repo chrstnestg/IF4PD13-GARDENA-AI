@@ -12,11 +12,25 @@
 ])
 
 @php
-    $borderColor = $status === 'deficiency' ? 'border-l-red-400' : 'border-l-green-500';
-    $badgeBg     = $status === 'deficiency' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700';
+    $borderColor = match($status) {
+        'deficiency' => 'border-l-red-400',
+        'warning'    => 'border-l-amber-400',
+        default      => 'border-l-green-500',
+    };
+    $badgeBg = match($status) {
+        'deficiency' => 'bg-red-100 text-red-700',
+        'warning'    => 'bg-amber-100 text-amber-700',
+        default      => 'bg-green-100 text-green-700',
+    };
 @endphp
 
-<div class="bg-white rounded-2xl border border-gray-100 border-l-4 {{ $borderColor }} p-6 h-full flex flex-col shadow-sm">
+<div id="card-{{ $id }}"
+     x-data="{ removing: false }"
+     x-show="!removing"
+     x-transition:leave="transition-all duration-500"
+     x-transition:leave-start="opacity-100 scale-100"
+     x-transition:leave-end="opacity-0 scale-95"
+     class="bg-white rounded-2xl border border-gray-100 border-l-4 {{ $borderColor }} p-6 h-full flex flex-col shadow-sm">
 
     {{-- Header --}}
     <div class="flex items-center gap-2 mb-4">
@@ -57,10 +71,14 @@
                 Terapkan Sekarang
             </button>
         </form>
-        <form action="{{ $doneRoute }}" method="POST">
+
+        {{-- Sudah Dilakukan — hilangkan card pakai Alpine dulu, baru submit --}}
+        <form action="{{ $doneRoute }}" method="POST" x-ref="doneForm">
             @csrf
             <input type="hidden" name="nutrisi_id" value="{{ $id }}">
-            <button class="border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-600 text-sm font-medium px-5 py-2 rounded-lg transition-all duration-150 flex items-center gap-1.5">
+            <button type="button"
+                    @click="removing = true; setTimeout(() => $refs.doneForm.submit(), 500)"
+                    class="border border-gray-200 text-gray-500 hover:border-green-400 hover:text-green-600 text-sm font-medium px-5 py-2 rounded-lg transition-all duration-150 flex items-center gap-1.5">
                 <i class="bi bi-check-circle"></i> Sudah Dilakukan
             </button>
         </form>

@@ -22,7 +22,6 @@
 
             {{-- Menu --}}
             <div class="flex items-center gap-8 text-white text-base font-medium">
-                <a href="#" class="hover:text-green-400 transition">Dashboard</a>
                 <a href="#" class="hover:text-green-400 transition">Monitoring</a>
                 <a href="#" class="hover:text-green-400 transition">Rekomendasi</a>
                 <a href="#" class="hover:text-green-400 transition">Riwayat</a>

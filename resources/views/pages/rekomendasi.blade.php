@@ -16,7 +16,7 @@
 
 {{-- Alert Kritis --}}
 @if($criticalAlertMsg)
-    <div class="bg-red-500 text-white text-sm font-semibold px-8 py-3.5 flex items-center gap-2 -mx-6 -mt-7 mb-6 rounded-none">
+    <div class="bg-red-500 text-white text-sm font-semibold px-8 py-3.5 flex items-center gap-2 -mx-10 -mt-7 mb-6">
         <i class="bi bi-exclamation-triangle-fill"></i> {{ $criticalAlertMsg }}
     </div>
 @endif
@@ -33,37 +33,30 @@
     <x-health-score :score="$healthScore" :label="$healthLabel" />
 </div>
 
-{{-- ════════ KONDISI OPTIMAL ════════ --}}
+{{-- KONDISI OPTIMAL --}}
 @if($semuaOptimal)
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center mb-6">
-
-        {{-- Ilustrasi --}}
+    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-10 text-center">
         <div class="w-28 h-28 rounded-full border-[3px] border-green-500 bg-green-50 flex items-center justify-center mx-auto mb-6">
             <span class="text-5xl">🥬</span>
         </div>
-
         <h2 class="font-brand font-extrabold text-2xl text-gray-800 mb-3">
             Tanaman Anda Berada dalam Kondisi Optimal
         </h2>
         <p class="text-gray-500 text-base leading-relaxed max-w-md mx-auto mb-8">
-            Semua parameter (EC, pH, suhu air, dan kelembapan) berada dalam rentang ideal.
+            Semua parameter (TDS, pH, suhu, dan kelembapan) berada dalam rentang ideal.
             Tanaman sawi putih Anda tumbuh sehat dan stabil.
         </p>
 
-        {{-- Chart label --}}
         <p class="text-sm font-semibold text-gray-500 text-left max-w-2xl mx-auto mb-3">
-            <i class="bi bi-graph-up-arrow me-1 text-green-500"></i>
+            <i class="bi bi-graph-up-arrow text-green-500 me-1"></i>
             <strong>7 Hari Terakhir – Kondisi Sangat Stabil</strong>
         </p>
-
         <div class="max-w-2xl mx-auto h-44">
             <canvas id="stabilityChart"></canvas>
         </div>
-
-        {{-- Legend --}}
         <div class="flex flex-wrap justify-center gap-5 mt-4">
             @foreach([
-                ['#2d9a4f', 'EC Optimal'],
+                ['#2d9a4f', 'TDS Optimal'],
                 ['#38bdf8', 'pH Optimal'],
                 ['#fb923c', 'Suhu Optimal'],
                 ['#a78bfa', 'Kelembapan Optimal'],
@@ -76,10 +69,10 @@
         </div>
     </div>
 
-{{-- ════════ KONDISI BERMASALAH ════════ --}}
+{{-- KONDISI BERMASALAH --}}
 @else
     <p class="text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Hal yang Harus Dilakukan</p>
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 mb-6">
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
         @foreach($rekomendasiList as $item)
             <x-nutrisi-card
                 :judul="$item['judul']"
@@ -97,67 +90,22 @@
     </div>
 @endif
 
-{{-- ════════ INSIGHT DEEP LEARNING ════════ --}}
-<div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 mb-6">
-    <div class="flex items-center gap-2 mb-4">
-        <div class="w-8 h-8 rounded-lg bg-green-100 flex items-center justify-center text-green-600">
-            <i class="bi bi-cpu-fill"></i>
-        </div>
-        <h6 class="font-brand font-bold text-gray-800">Insight dari Deep Learning</h6>
-    </div>
-
-    <div class="border-l-[3px] border-green-500 bg-gray-50 rounded-r-xl px-4 py-3 mb-4 space-y-2">
-        <p class="text-sm text-gray-600 leading-relaxed">{{ $insightParagraf1 }}</p>
-        <p class="text-sm text-gray-600 leading-relaxed">{{ $insightParagraf2 }}</p>
-    </div>
-
-    <p class="text-sm font-bold text-gray-700 mb-2">Apa yang perlu diperhatikan agar tetap optimal:</p>
-    <div class="space-y-1.5 mb-4">
-        @foreach($insightTips as $tip)
-            <div class="flex items-start gap-2 text-sm text-gray-600">
-                <i class="bi bi-check-circle-fill text-green-500 mt-0.5 flex-shrink-0"></i>
-                {{ $tip }}
-            </div>
-        @endforeach
-    </div>
-
-    <div class="bg-green-500 text-white text-sm rounded-xl px-4 py-3 leading-relaxed">
-        <strong>Prediksi:</strong> {{ $insightPrediksi }}
-    </div>
-</div>
-
-{{-- ════════ CLOSING CARD ════════ --}}
-<div class="bg-gradient-to-br from-green-50 to-emerald-100 border border-green-200 rounded-2xl p-8 text-center">
-    <h5 class="font-brand font-bold text-green-900 text-lg mb-3">
-        Terima kasih telah mempercayakan perawatan tanaman sawi putih Anda kepada kami 🌿
-    </h5>
-    <p class="text-green-800 text-sm leading-relaxed max-w-xl mx-auto">
-        Sistem ini kami buat agar Anda bisa lebih mudah memantau kondisi nutrisi, suhu, kelembapan,
-        dan mendapatkan rekomendasi yang tepat setiap hari. Semoga tanaman sawi Anda selalu sehat,
-        tumbuh optimal, dan memberikan panen yang berkualitas. Kami dari tim
-        <strong>GARDENA</strong>-AI akan terus berusaha meningkatkan sistem ini supaya semakin
-        membantu petani hidroponik di Indonesia.
-    </p>
-</div>
-
 @endsection
 
 @push('scripts')
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-
     @if($semuaOptimal)
-    const labels = @json($chartLabels);
     new Chart(document.getElementById('stabilityChart'), {
         type: 'line',
         data: {
-            labels,
+            labels: @json($chartLabels),
             datasets: [
-                { label:'EC Optimal',         data:@json($chartEc),         borderColor:'#2d9a4f', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#2d9a4f', tension:0.3, fill:false },
-                { label:'pH Optimal',         data:@json($chartPh),         borderColor:'#38bdf8', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#38bdf8', tension:0.3, fill:false },
-                { label:'Suhu Optimal',       data:@json($chartSuhu),       borderColor:'#fb923c', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#fb923c', tension:0.3, fill:false },
-                { label:'Kelembapan Optimal', data:@json($chartKelembapan), borderColor:'#a78bfa', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#a78bfa', tension:0.3, fill:false },
+                { label:'TDS',        data:@json($chartTds),        borderColor:'#2d9a4f', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#2d9a4f', tension:0.3, fill:false },
+                { label:'pH',         data:@json($chartPh),         borderColor:'#38bdf8', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#38bdf8', tension:0.3, fill:false },
+                { label:'Suhu',       data:@json($chartSuhu),       borderColor:'#fb923c', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#fb923c', tension:0.3, fill:false },
+                { label:'Kelembapan', data:@json($chartKelembapan), borderColor:'#a78bfa', borderWidth:2.5, pointRadius:4, pointBackgroundColor:'#a78bfa', tension:0.3, fill:false },
             ]
         },
         options: {
@@ -170,7 +118,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
     @endif
-
 });
 </script>
 @endpush

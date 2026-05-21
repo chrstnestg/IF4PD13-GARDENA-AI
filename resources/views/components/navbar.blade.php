@@ -1,14 +1,16 @@
-<nav class="sticky top-0 z-50 bg-white border-b border-gray-200 h-16 flex items-center px-8 gap-0">
+<nav class="sticky top-0 z-50 bg-white border-b border-gray-200 h-16 flex items-center px-8">
 
-    {{-- Logo --}}
-    <a href="{{ route('dashboard') }}" class="mr-10 flex-shrink-0">
-        <img src="{{ asset('images/logo gardena-ai.jpeg') }}" alt="GARDENA-AI" class="h-9 w-auto object-contain">
+    {{-- Logo sebesar navbar --}}
+    <a href="{{ route('dashboard') }}" class="flex-shrink-0">
+        <img src="{{ asset('images/logo gardena-ai.jpeg') }}"
+             alt="GARDENA-AI"
+             class="h-12 w-auto object-contain">
     </a>
 
-    {{-- Nav Links — tambah/hapus halaman di sini --}}
-    <div class="flex items-center gap-1 flex-1">
+    {{-- Nav Links di tengah --}}
+    <div class="flex items-center gap-1 flex-1 justify-center">
         @foreach([
-            ['dashboard',   'Dashboard'],
+            ['dashboard',   'Monitoring'],
             ['rekomendasi', 'Rekomendasi'],
             ['riwayat',     'Riwayat'],
         ] as [$route, $label])
@@ -26,7 +28,7 @@
     </div>
 
     {{-- User --}}
-    <div class="flex items-center gap-3 ml-auto">
+    <div class="flex items-center gap-3">
         <div class="text-right hidden sm:block">
             <p class="text-sm font-semibold font-brand text-gray-800 leading-tight">
                 {{ auth()->user()->name ?? 'Irene Kristi' }}

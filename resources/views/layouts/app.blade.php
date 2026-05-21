@@ -69,7 +69,7 @@
     @endif
 
     {{-- ════════════════ CONTENT ════════════════ --}}
-    <main class="flex-1 max-w-6xl w-full mx-auto px-6 py-7">
+    <main class="flex-1 w-full px-10 py-7">
         @yield('content')
     </main>
 
