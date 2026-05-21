@@ -11,20 +11,38 @@ class RekomendasiController extends Controller
 {
     public function index()
     {
-        // ── Ambil sensor terbaru dari DB ──
         $sensor = SensorReading::latest('dibaca_pada')->first();
 
-        // ── Data chart 7 hari terakhir ──
-        $chartLabels     = [];
-        $chartTds        = [];
-        $chartPh         = [];
-        $chartSuhu       = [];
-        $chartKelembapan = [];
+        // Health score dari sensor
+        [$healthScore, $healthLabel] = $this->hitungHealthScore($sensor);
+
+        // Filter rekomendasi yang sudah dilakukan
+        $sudahDilakukan = TindakanRekomendasi::where('aksi', 'selesai')
+            ->pluck('rekomendasi_id')
+            ->toArray();
+
+        $rekomendasiList = Rekomendasi::latest()
+            ->whereNotIn('id', $sudahDilakukan)
+            ->get()
+            ->map(fn($r) => [
+                'id'          => $r->nutrisi_id,
+                'judul'       => $r->judul,
+                'status'      => $r->status,
+                'labelStatus' => $r->label_status,
+                'nilaiSaatIni'=> $r->nilai_saat_ini,
+                'nilaiOptimal'=> $r->nilai_optimal,
+                'deskripsi'   => $r->deskripsi,
+                'aksiList'    => $r->aksi_list ?? [],
+                'kritis'      => $r->kritis,
+                'pesanKritis' => $r->pesan_kritis,
+            ])->toArray();
+
+        // Chart 7 hari terakhir
+        $chartLabels = $chartTds = $chartPh = $chartSuhu = $chartKelembapan = [];
 
         for ($i = 6; $i >= 0; $i--) {
-            $tanggal = now()->subDays($i);
-            $rata    = SensorReading::whereDate('dibaca_pada', $tanggal)->get();
-
+            $tanggal           = now()->subDays($i);
+            $rata              = SensorReading::whereDate('dibaca_pada', $tanggal)->get();
             $chartLabels[]     = $tanggal->translatedFormat('j M');
             $chartTds[]        = $rata->isNotEmpty() ? round($rata->avg('tds'), 2)        : 0;
             $chartPh[]         = $rata->isNotEmpty() ? round($rata->avg('ph'), 2)         : 0;
@@ -32,31 +50,8 @@ class RekomendasiController extends Controller
             $chartKelembapan[] = $rata->isNotEmpty() ? round($rata->avg('kelembapan'), 2) : 0;
         }
 
-        // ── Semua ini nanti diganti hasil dari AI ──
-        $rekomendasiList  = Rekomendasi::latest()->get()->map(fn($r) => [
-            'id'          => $r->nutrisi_id,
-            'judul'       => $r->judul,
-            'status'      => $r->status,
-            'labelStatus' => $r->label_status,
-            'nilaiSaatIni'=> $r->nilai_saat_ini,
-            'nilaiOptimal'=> $r->nilai_optimal,
-            'deskripsi'   => $r->deskripsi,
-            'aksiList'    => $r->aksi_list ?? [],
-            'kritis'      => $r->kritis,
-            'pesanKritis' => $r->pesan_kritis,
-        ])->toArray();
-
-        $healthScore = 68;
-        $healthLabel = 'Sedang';
-
-        $insightParagraf1 = 'Model AI sedang menganalisis data sensor terbaru.';
-        $insightParagraf2 = 'Hasil analisis lengkap akan tersedia setelah model selesai dilatih.';
-        $insightTips      = ['Pantau kondisi sensor secara rutin', 'Catat perubahan yang terjadi'];
-        $insightPrediksi  = 'Prediksi akan tersedia setelah model AI aktif.';
-
         return view('pages.rekomendasi', compact(
             'rekomendasiList', 'healthScore', 'healthLabel',
-            'insightParagraf1', 'insightParagraf2', 'insightTips', 'insightPrediksi',
             'chartLabels', 'chartTds', 'chartPh', 'chartSuhu', 'chartKelembapan',
         ));
     }
@@ -93,5 +88,35 @@ class RekomendasiController extends Controller
 
         return redirect()->route('rekomendasi')
             ->with('success', 'Tindakan dicatat sebagai sudah dilakukan.');
+    }
+
+    private function hitungHealthScore(?SensorReading $sensor): array
+    {
+        if (!$sensor) return [0, 'Tidak Ada Data'];
+
+        $skor = 100;
+
+        if ($sensor->tds < 800)           $skor -= 20;
+        elseif ($sensor->tds > 1400)      $skor -= 10;
+
+        if ($sensor->ph < 5.5)            $skor -= 20;
+        elseif ($sensor->ph > 6.5)        $skor -= 10;
+
+        if ($sensor->suhu < 18)           $skor -= 10;
+        elseif ($sensor->suhu > 25)       $skor -= 10;
+
+        if ($sensor->kelembapan < 60)     $skor -= 5;
+        elseif ($sensor->kelembapan > 80) $skor -= 5;
+
+        $skor  = max(0, $skor);
+        $label = match(true) {
+            $skor >= 90 => 'Sangat Sehat',
+            $skor >= 75 => 'Sehat',
+            $skor >= 60 => 'Sedang',
+            $skor >= 40 => 'Perlu Perhatian',
+            default     => 'Kritis',
+        };
+
+        return [$skor, $label];
     }
 }
