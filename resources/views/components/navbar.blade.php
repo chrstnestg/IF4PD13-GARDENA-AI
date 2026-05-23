@@ -1,7 +1,7 @@
 <nav class="sticky top-0 z-50 bg-white border-b border-gray-200 h-16 flex items-center px-8">
 
     {{-- Logo sebesar navbar --}}
-    <a href="{{ route('dashboard') }}" class="flex-shrink-0">
+    <a href="{{ route('monitoring') }}" class="flex-shrink-0">
         <img src="{{ asset('images/logo gardena-ai.jpeg') }}"
              alt="GARDENA-AI"
              class="h-12 w-auto object-contain">
@@ -10,7 +10,7 @@
     {{-- Nav Links di tengah --}}
     <div class="flex items-center gap-1 flex-1 justify-center">
         @foreach([
-            ['dashboard',   'Monitoring'],
+            ['monitoring',   'Monitoring'],
             ['rekomendasi', 'Rekomendasi'],
             ['riwayat',     'Riwayat'],
         ] as [$route, $label])

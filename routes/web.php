@@ -14,9 +14,8 @@ Route::post('/register', fn() => redirect('/login'));
 Route::post('/login',    fn() => redirect('/dashboard'));
 
 // ── Main Pages ──
-Route::get('/dashboard',  [DashboardController::class,   'index'])->name('dashboard');
 Route::get('/rekomendasi',[RekomendasiController::class, 'index'])->name('rekomendasi');
-Route::get('/monitoring', fn() => view('monitoring'))->name('monitoring');
+Route::get('/monitoring', fn() => view('pages.monitoring'))->name('monitoring');
 Route::get('/pengaturan', fn() => view('pengaturan'))->name('pengaturan');
 
 // ── Riwayat ──

@@ -3,51 +3,48 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Models\SensorReading;
-use App\Models\Rekomendasi;
-use App\Models\TindakanRekomendasi;
+use App\Models\DataSensor;
+use App\Models\AnalisisAi;
 
 class RekomendasiController extends Controller
 {
     public function index()
     {
-        $sensor = SensorReading::latest('dibaca_pada')->first();
+        // ── Ambil sensor terbaru ──
+        $sensor = DataSensor::latest('dibaca_pada')->first();
 
-        // Health score dari sensor
+        // ── Health score dari sensor ──
         [$healthScore, $healthLabel] = $this->hitungHealthScore($sensor);
 
-        // Filter rekomendasi yang sudah dilakukan
-        $sudahDilakukan = TindakanRekomendasi::where('aksi', 'selesai')
-            ->pluck('rekomendasi_id')
-            ->toArray();
-
-        $rekomendasiList = Rekomendasi::latest()
-            ->whereNotIn('id', $sudahDilakukan)
+        // ── Ambil rekomendasi dari analisis AI, filter yang sudah selesai ──
+        $rekomendasiList = AnalisisAi::with('dataSensor')
+            ->where('status_tindakan', '!=', 'selesai')
+            ->latest('waktu_analisis')
             ->get()
-            ->map(fn($r) => [
-                'id'          => $r->nutrisi_id,
-                'judul'       => $r->judul,
-                'status'      => $r->status,
-                'labelStatus' => $r->label_status,
-                'nilaiSaatIni'=> $r->nilai_saat_ini,
-                'nilaiOptimal'=> $r->nilai_optimal,
-                'deskripsi'   => $r->deskripsi,
-                'aksiList'    => $r->aksi_list ?? [],
-                'kritis'      => $r->kritis,
-                'pesanKritis' => $r->pesan_kritis,
+            ->map(fn($a) => [
+                'id'          => $a->id_analisis,
+                'judul'       => $this->judulDariKondisi($a->kondisi_nutrisi),
+                'status'      => $a->kondisi_nutrisi,
+                'labelStatus' => $this->labelDariKondisi($a->kondisi_nutrisi),
+                'nilaiSaatIni'=> $this->nilaiSensor($a->dataSensor),
+                'nilaiOptimal'=> $this->nilaiOptimal($a->kondisi_nutrisi),
+                'deskripsi'   => '',
+                'aksiList'    => json_decode($a->rekomendasi, true) ?? [],
+                'kritis'      => false,
+                'pesanKritis' => null,
             ])->toArray();
 
-        // Chart 7 hari terakhir
+        // ── Chart 7 hari terakhir ──
         $chartLabels = $chartTds = $chartPh = $chartSuhu = $chartKelembapan = [];
 
         for ($i = 6; $i >= 0; $i--) {
             $tanggal           = now()->subDays($i);
-            $rata              = SensorReading::whereDate('dibaca_pada', $tanggal)->get();
+            $rata              = DataSensor::whereDate('dibaca_pada', $tanggal)->get();
             $chartLabels[]     = $tanggal->translatedFormat('j M');
-            $chartTds[]        = $rata->isNotEmpty() ? round($rata->avg('tds'), 2)        : 0;
-            $chartPh[]         = $rata->isNotEmpty() ? round($rata->avg('ph'), 2)         : 0;
-            $chartSuhu[]       = $rata->isNotEmpty() ? round($rata->avg('suhu'), 2)       : 0;
-            $chartKelembapan[] = $rata->isNotEmpty() ? round($rata->avg('kelembapan'), 2) : 0;
+            $chartTds[]        = $rata->isNotEmpty() ? round($rata->avg('ec_tds'), 2)      : 0;
+            $chartPh[]         = $rata->isNotEmpty() ? round($rata->avg('ph'), 2)           : 0;
+            $chartSuhu[]       = $rata->isNotEmpty() ? round($rata->avg('suhu'), 2)         : 0;
+            $chartKelembapan[] = $rata->isNotEmpty() ? round($rata->avg('kelembapan'), 2)   : 0;
         }
 
         return view('pages.rekomendasi', compact(
@@ -58,16 +55,10 @@ class RekomendasiController extends Controller
 
     public function terapkan(Request $request)
     {
-        $request->validate(['nutrisi_id' => 'required|string']);
+        $request->validate(['nutrisi_id' => 'required']);
 
-        $rek = Rekomendasi::where('nutrisi_id', $request->nutrisi_id)->first();
-        if ($rek) {
-            TindakanRekomendasi::create([
-                'rekomendasi_id' => $rek->id,
-                'aksi'           => 'terapkan',
-                'dilakukan_pada' => now(),
-            ]);
-        }
+        AnalisisAi::where('id_analisis', $request->nutrisi_id)
+            ->update(['status_tindakan' => 'diterapkan']);
 
         return redirect()->route('rekomendasi')
             ->with('success', 'Rekomendasi berhasil diterapkan!');
@@ -75,29 +66,27 @@ class RekomendasiController extends Controller
 
     public function selesai(Request $request)
     {
-        $request->validate(['nutrisi_id' => 'required|string']);
+        $request->validate(['nutrisi_id' => 'required']);
 
-        $rek = Rekomendasi::where('nutrisi_id', $request->nutrisi_id)->first();
-        if ($rek) {
-            TindakanRekomendasi::create([
-                'rekomendasi_id' => $rek->id,
-                'aksi'           => 'selesai',
-                'dilakukan_pada' => now(),
-            ]);
-        }
+        AnalisisAi::where('id_analisis', $request->nutrisi_id)
+            ->update(['status_tindakan' => 'selesai']);
 
         return redirect()->route('rekomendasi')
             ->with('success', 'Tindakan dicatat sebagai sudah dilakukan.');
     }
 
-    private function hitungHealthScore(?SensorReading $sensor): array
+    // ══════════════════════════════════════════
+    // PRIVATE HELPERS
+    // ══════════════════════════════════════════
+
+    private function hitungHealthScore(?DataSensor $sensor): array
     {
         if (!$sensor) return [0, 'Tidak Ada Data'];
 
         $skor = 100;
 
-        if ($sensor->tds < 800)           $skor -= 20;
-        elseif ($sensor->tds > 1400)      $skor -= 10;
+        if ($sensor->ec_tds < 800)        $skor -= 20;
+        elseif ($sensor->ec_tds > 1400)   $skor -= 10;
 
         if ($sensor->ph < 5.5)            $skor -= 20;
         elseif ($sensor->ph > 6.5)        $skor -= 10;
@@ -118,5 +107,34 @@ class RekomendasiController extends Controller
         };
 
         return [$skor, $label];
+    }
+
+    private function judulDariKondisi(string $kondisi): string
+    {
+        return match($kondisi) {
+            'deficiency' => 'Nutrisi / TDS',
+            'warning'    => 'Peringatan Sensor',
+            default      => 'Kondisi Normal',
+        };
+    }
+
+    private function labelDariKondisi(string $kondisi): string
+    {
+        return match($kondisi) {
+            'deficiency' => 'Kekurangan',
+            'warning'    => 'Peringatan',
+            default      => 'Optimal',
+        };
+    }
+
+    private function nilaiSensor(?DataSensor $sensor): string
+    {
+        if (!$sensor) return '-';
+        return "TDS: {$sensor->ec_tds} ppm | pH: {$sensor->ph} | Suhu: {$sensor->suhu}°C";
+    }
+
+    private function nilaiOptimal(string $kondisi): string
+    {
+        return 'TDS: 800–1400 ppm | pH: 5.5–6.5 | Suhu: 18–25°C';
     }
 }
