@@ -5,119 +5,183 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Daftar - GARDENA-AI</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
     <style>
         body { font-family: 'Poppins', sans-serif; }
+        html { overflow: hidden; }
+        body { overflow: hidden; }
     </style>
 </head>
+
 <body class="h-screen flex">
 
-    {{-- KIRI: Background + Info --}}
+    {{-- KIRI --}}
     <div class="relative w-1/2 h-full">
-        {{-- Background Image --}}
         <div class="absolute inset-0 bg-cover bg-center"
             style="background-image: url('{{ asset('images/bg2.jpg') }}');">
             <div class="absolute inset-0 bg-black/50"></div>
         </div>
 
-        {{-- Content Kiri --}}
         <div class="relative z-10 h-full flex flex-col justify-center px-14">
-
-            {{-- Badge --}}
             <span class="text-green-400 text-xs font-semibold uppercase tracking-widest mb-4">
                 Smart Hydroponic System
             </span>
-
-            {{-- Judul --}}
             <h1 class="text-white text-4xl font-extrabold leading-tight mb-4">
                 Selamat Datang di<br>
                 <span class="text-green-400">GARDENA-AI</span>
             </h1>
-
-            {{-- Deskripsi --}}
             <p class="text-gray-300 text-sm mb-10 max-w-sm">
-                Monitor kondisi tanaman hidroponik secara real-time dan dapatkan rekomendasi nutrisi otomatis untuk pertumbuhan optimal.
+                Monitor kondisi tanaman hidroponik secara real-time dan dapatkan rekomendasi nutrisi otomatis.
             </p>
-
-            {{-- Stats --}}
-            <div class="flex gap-10">
-                <div class="text-white">
-                    <p class="text-2xl font-bold">4</p>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider">Sensor Aktif</p>
-                </div>
-                <div class="text-white">
-                    <p class="text-2xl font-bold text-green-400">90%</p>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider">Akurasi Data</p>
-                </div>
-                <div class="text-white">
-                    <p class="text-2xl font-bold">24/7</p>
-                    <p class="text-xs text-gray-400 uppercase tracking-wider">Monitoring</p>
-                </div>
-            </div>
         </div>
     </div>
 
-    {{-- KANAN: Form Register --}}
+    {{-- KANAN --}}
     <div class="w-1/2 h-full flex items-center justify-center bg-white px-16">
         <div class="w-full max-w-md">
 
-            {{-- Judul Form --}}
-            <h2 class="text-3xl font-extrabold text-gray-800 mb-8">Buat Akun Baru</h2>
+            <h2 class="text-3xl font-extrabold text-gray-800 mb-4">Buat Akun Baru</h2>
 
-            {{-- Form --}}
-            <div class="space-y-5">
+            <form id="registerForm" action="/register" method="POST" class="space-y-4">
+                @csrf
 
-                {{-- Nama Lengkap --}}
+                {{-- Nama --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">Nama Lengkap</label>
-                    <input
-                        type="text"
-                        placeholder="Masukkan Nama Lengkap"
-                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    <input type="text" name="nama" value="{{ old('nama') }}" required
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-400">
                 </div>
 
                 {{-- Username --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">Username</label>
-                    <input
-                        type="text"
-                        placeholder="Masukkan Username"
-                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    <input type="text" name="username" value="{{ old('username') }}" required
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-400">
                 </div>
 
                 {{-- Email --}}
                 <div>
-                    <label class="block text-sm font-medium text-gray-600 mb-1">Alamat Email</label>
-                    <input
-                        type="email"
-                        placeholder="Masukkan Email"
-                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    <label class="block text-sm font-medium text-gray-600 mb-1">Email</label>
+                    <input type="email" name="email" value="{{ old('email') }}" required
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-400">
                 </div>
 
                 {{-- Password --}}
                 <div>
                     <label class="block text-sm font-medium text-gray-600 mb-1">Password</label>
-                    <input
-                        type="password"
-                        placeholder="Masukkan Password"
-                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-400 focus:border-transparent transition">
+                    <input type="password" id="password" name="password" required
+                        class="w-full border border-gray-300 rounded-lg px-4 py-3 text-sm focus:ring-2 focus:ring-green-400">
+                    <p class="text-xs text-gray-400 mt-1">
+                        Minimal 8 karakter, huruf besar, huruf kecil, angka, dan simbol.
+                    </p>
                 </div>
 
-                {{-- Tombol Daftar --}}
-                <button
-                    class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition mt-2">
+                {{-- Button --}}
+                <button type="submit"
+                    class="w-full bg-green-600 text-white font-semibold py-3 rounded-lg hover:bg-green-700 transition">
                     Daftar Sekarang
                 </button>
 
-                {{-- Link Login --}}
-                <p class="text-center text-sm text-gray-500 mt-4">
+                <p class="text-center text-sm text-gray-500">
                     Sudah Punya Akun?
                     <a href="/login" class="text-green-600 font-semibold hover:underline">Masuk Disini</a>
                 </p>
 
-            </div>
+            </form>
         </div>
     </div>
 
 </body>
+
+<script>
+const MySwal = Swal.mixin({
+    scrollbarPadding: false,
+    heightAuto: false,
+    didOpen: () => {
+        document.body.style.paddingRight = '0px';
+        document.documentElement.style.paddingRight = '0px';
+        document.body.style.overflow = 'hidden';
+    }
+});
+
+document.addEventListener("DOMContentLoaded", function () {
+    const password = document.getElementById('password');
+    const form = document.getElementById('registerForm');
+
+    // ─── Validasi kriteria password sebelum submit ─────────────────────────
+    form.addEventListener('submit', function (e) {
+        const pwd = password.value;
+
+        const hasMinLength = pwd.length >= 8;
+        const hasUppercase = /[A-Z]/.test(pwd);
+        const hasLowercase = /[a-z]/.test(pwd);
+        const hasNumber    = /[0-9]/.test(pwd);
+        const hasSymbol    = /[^A-Za-z0-9]/.test(pwd);
+
+        if (!hasMinLength || !hasUppercase || !hasLowercase || !hasNumber || !hasSymbol) {
+            e.preventDefault();
+
+            let missing = [];
+            if (!hasMinLength) missing.push('minimal 8 karakter');
+            if (!hasUppercase) missing.push('huruf besar (A-Z)');
+            if (!hasLowercase) missing.push('huruf kecil (a-z)');
+            if (!hasNumber)    missing.push('angka (0-9)');
+            if (!hasSymbol)    missing.push('simbol (!, @, #, ...)');
+
+            MySwal.fire({
+                icon: 'error',
+                title: 'Password Tidak Memenuhi Kriteria!',
+                html: `Password harus mengandung:<br><ul style="text-align:left; margin-top:8px; padding-left:20px;">` +
+                      missing.map(m => `<li>• ${m}</li>`).join('') +
+                      `</ul>`,
+                confirmButtonColor: '#16a34a',
+                confirmButtonText: 'Perbaiki Password'
+            });
+            return;
+        }
+    });
+
+    // ─── SweetAlert dari server ────────────────────────────────────────────
+
+    @if (session('success'))
+        MySwal.fire({
+            icon: 'success',
+            title: 'Berhasil Daftar!',
+            text: '{{ session('success') }}',
+            confirmButtonColor: '#16a34a',
+            confirmButtonText: 'Masuk Sekarang'
+        }).then(() => {
+            window.location.href = '/login';
+        });
+    @endif
+
+    @if ($errors->has('password'))
+        MySwal.fire({
+            icon: 'error',
+            title: 'Password Tidak Valid!',
+            text: '{{ $errors->first('password') }}',
+            confirmButtonColor: '#16a34a',
+            confirmButtonText: 'Coba Lagi'
+        });
+    @elseif ($errors->has('email'))
+        MySwal.fire({
+            icon: 'error',
+            title: 'Email Sudah Digunakan!',
+            text: '{{ $errors->first('email') }}',
+            confirmButtonColor: '#16a34a',
+            confirmButtonText: 'Coba Lagi'
+        });
+    @elseif ($errors->any())
+        MySwal.fire({
+            icon: 'error',
+            title: 'Pendaftaran Gagal!',
+            text: '{{ $errors->first() }}',
+            confirmButtonColor: '#16a34a',
+            confirmButtonText: 'Coba Lagi'
+        });
+    @endif
+
+});
+</script>
 </html>

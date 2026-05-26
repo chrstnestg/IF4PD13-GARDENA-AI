@@ -8,7 +8,7 @@ class DataSensor extends Model
     protected $table      = 'data_sensor';
     protected $primaryKey = 'id_sensor';
     protected $fillable   = [
-        'id_device', 'ph', 'suhu', 'ec_tds', 'kelembapan',
+        'id_device', 'ph', 'suhu', 'ec_tds',
         'status_valid', 'dibaca_pada'
     ];
 

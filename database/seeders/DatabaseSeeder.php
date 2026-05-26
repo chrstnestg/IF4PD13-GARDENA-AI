@@ -38,7 +38,6 @@ class DatabaseSeeder extends Seeder
                     'ph'          => mt_rand(39, 41) / 10,   // 3.9–4.1 (rendah)
                     'suhu'        => mt_rand(180, 250) / 10, // 18–25°C
                     'ec_tds'      => mt_rand(300, 700),      // rendah
-                    'kelembapan'  => mt_rand(60, 80),
                     'status_valid'=> true,
                     'dibaca_pada' => now()->subDays($hari)->setHour($jam),
                 ]);
