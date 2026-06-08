@@ -30,15 +30,15 @@
 
     {{-- ════════════════ LOADING SCREEN ════════════════ --}}
     <div x-show="loading"
-         x-transition:leave="transition-opacity duration-300"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
-         class="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center gap-5">
+        x-transition:leave="transition-opacity duration-300"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        class="fixed inset-0 z-[9999] bg-white flex flex-col items-center justify-center gap-6">
 
-        <img src="{{ asset('images/logo.png') }}" alt="GARDENA-AI" class="h-10 animate-pulse">
+        <img src="{{ asset('images/logo.png') }}" alt="GARDENA-AI" class="h-40 animate-pulse">
 
         {{-- Progress bar --}}
-        <div class="w-48 h-1 bg-gray-100 rounded-full overflow-hidden">
+        <div class="w-56 h-1.5 bg-gray-100 rounded-full overflow-hidden">
             <div class="h-full bg-green-500 rounded-full animate-[loading_0.9s_ease_forwards]"></div>
         </div>
 

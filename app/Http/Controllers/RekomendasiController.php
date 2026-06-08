@@ -19,6 +19,7 @@ class RekomendasiController extends Controller
         // ── Ambil rekomendasi dari analisis AI, filter yang sudah selesai ──
         $rekomendasiList = AnalisisAi::with('dataSensor')
             ->where('status_tindakan', '!=', 'selesai')
+            ->limit(10)
             ->latest('waktu_analisis')
             ->get()
             ->map(fn($a) => [
