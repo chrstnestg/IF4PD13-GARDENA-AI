@@ -13,10 +13,30 @@ class RekomendasiController extends Controller
         // ── Ambil sensor terbaru ──
         $sensor = DataSensor::latest('dibaca_pada')->first();
 
+        // ── Auto generate analisis kalau sensor ada tapi analisis kosong ──
+        if ($sensor) {
+            $analisisAda = AnalisisAi::where('status_tindakan', '!=', 'selesai')
+                ->latest('waktu_analisis')
+                ->first();
+
+            if (!$analisisAda) {
+                $kondisiNutrisi = $this->tentukanKondisi($sensor);
+                $rekomendasi    = $this->rekomendasiDariKondisi($kondisiNutrisi);
+
+                AnalisisAi::create([
+                    'id_sensor'       => $sensor->id_sensor,
+                    'kondisi_nutrisi' => $kondisiNutrisi,
+                    'rekomendasi'     => json_encode($rekomendasi),
+                    'waktu_analisis'  => now(),
+                    'status_tindakan' => 'belum',
+                ]);
+            }
+        }
+
         // ── Health score dari sensor terbaru ──
         [$healthScore, $healthLabel] = $this->hitungHealthScore($sensor);
 
-        // ── Ambil 1 kondisi aktif terbaru saja ──
+        // ── Ambil 1 kondisi aktif terbaru ──
         $analisis = AnalisisAi::with('dataSensor')
             ->where('status_tindakan', '!=', 'selesai')
             ->latest('waktu_analisis')
@@ -72,38 +92,85 @@ class RekomendasiController extends Controller
     // PRIVATE HELPERS
     // ══════════════════════════════════════════
 
+    private function tentukanKondisi(DataSensor $sensor): string
+    {
+        if ($sensor->ph < 5.5)                              return 'pH Rendah';
+        if ($sensor->ph > 6.5)                              return 'pH Tinggi';
+        if ($sensor->ec_tds < 800)                          return 'Nutrisi Kurang';
+        if ($sensor->ec_tds > 1400)                         return 'Nutrisi Berlebih';
+        if ($sensor->suhu < 18 || $sensor->suhu > 25)       return 'Suhu Tidak Ideal';
+
+        return 'Normal';
+    }
+
+    private function rekomendasiDariKondisi(string $kondisi): array
+    {
+        return match($kondisi) {
+            'pH Rendah'        => [
+                'Tambahkan larutan pH Up (Kalium Hidroksida) secara bertahap',
+                'Aduk larutan dan tunggu 10 menit sebelum mengukur ulang',
+                'Target pH antara 5.5 - 6.5',
+            ],
+            'pH Tinggi'        => [
+                'Tambahkan larutan pH Down (Asam Fosfat) secara bertahap',
+                'Aduk larutan dan tunggu 10 menit sebelum mengukur ulang',
+                'Target pH antara 5.5 - 6.5',
+            ],
+            'Nutrisi Kurang'   => [
+                'Tambahkan nutrisi AB Mix sesuai dosis anjuran',
+                'Ukur ulang TDS setelah 15 menit',
+                'Target TDS antara 800 - 1400 ppm',
+            ],
+            'Nutrisi Berlebih' => [
+                'Encerkan larutan dengan menambahkan air bersih',
+                'Buang sebagian larutan lama jika perlu',
+                'Target TDS antara 800 - 1400 ppm',
+            ],
+            'Suhu Tidak Ideal' => [
+                'Periksa sirkulasi udara di sekitar instalasi hidroponik',
+                'Gunakan coolant atau pemanas air jika diperlukan',
+                'Target suhu antara 18°C - 25°C',
+            ],
+            default            => [
+                'Pertahankan kondisi nutrisi yang sudah optimal',
+                'Lakukan pengecekan rutin setiap hari',
+                'Catat perkembangan tanaman secara berkala',
+            ],
+        };
+    }
+
     private function hitungHealthScore(?DataSensor $sensor): array
-{
-    if (!$sensor) return [0, 'Tidak Ada Data'];
+    {
+        if (!$sensor) return [0, 'Tidak Ada Data'];
 
-    $skor = 100;
+        $skor = 100;
 
-    // pH
-    if ($sensor->ph < 5.0)          $skor -= 40;
-    elseif ($sensor->ph < 5.5)      $skor -= 25;
-    elseif ($sensor->ph > 7.0)      $skor -= 30;
-    elseif ($sensor->ph > 6.5)      $skor -= 15;
+        // pH
+        if ($sensor->ph < 5.0)          $skor -= 40;
+        elseif ($sensor->ph < 5.5)      $skor -= 25;
+        elseif ($sensor->ph > 7.0)      $skor -= 30;
+        elseif ($sensor->ph > 6.5)      $skor -= 15;
 
-    // TDS
-    if ($sensor->ec_tds < 800)      $skor -= 25;
-    elseif ($sensor->ec_tds < 1000) $skor -= 15;
-    elseif ($sensor->ec_tds > 1800) $skor -= 20;
-    elseif ($sensor->ec_tds > 1500) $skor -= 10;
+        // TDS
+        if ($sensor->ec_tds < 800)      $skor -= 25;
+        elseif ($sensor->ec_tds < 1000) $skor -= 15;
+        elseif ($sensor->ec_tds > 1800) $skor -= 20;
+        elseif ($sensor->ec_tds > 1500) $skor -= 10;
 
-    // Suhu
-    if ($sensor->suhu < 18 || $sensor->suhu > 25) $skor -= 15;
+        // Suhu
+        if ($sensor->suhu < 18 || $sensor->suhu > 25) $skor -= 15;
 
-    $skor  = max(0, $skor);
-    $label = match(true) {
-        $skor >= 90 => 'Sangat Sehat',
-        $skor >= 75 => 'Sehat',
-        $skor >= 60 => 'Sedang',
-        $skor >= 40 => 'Perlu Perhatian',
-        default     => 'Kritis',
-    };
+        $skor  = max(0, $skor);
+        $label = match(true) {
+            $skor >= 90 => 'Sangat Sehat',
+            $skor >= 75 => 'Sehat',
+            $skor >= 60 => 'Sedang',
+            $skor >= 40 => 'Perlu Perhatian',
+            default     => 'Kritis',
+        };
 
-    return [$skor, $label];
-}
+        return [$skor, $label];
+    }
 
     private function judulDariKondisi(string $kondisi): string
     {
