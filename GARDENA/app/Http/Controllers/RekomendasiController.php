@@ -9,18 +9,41 @@ use App\Models\AnalisisAi;
 class RekomendasiController extends Controller
 {
     public function index()
-    {
-        // 1. Ambil data sensor terbaru
-        $sensor = DataSensor::latest('dibaca_pada')->first();
+{
+    // ── Ambil sensor terbaru ──
+    $sensor = DataSensor::latest('dibaca_pada')->first();
 
-        // 2. Hitung Health Score secara dinamis
-        [$healthScore, $healthLabel] = $this->hitungHealthScore($sensor);
+    // ── Selalu generate analisis baru berdasarkan sensor terbaru ──
+    if ($sensor) {
+        $kondisiNutrisi = $this->tentukanKondisi($sensor);
 
-        // 3. Ambil data analisis aktif terbaru yang SUDAH dibuat oleh AI Python
-        $analisis = AnalisisAi::with('dataSensor')
-            ->where('status_tindakan', '!=', 'selesai')
+        $analisisAda = AnalisisAi::where('status_tindakan', '!=', 'selesai')
+            ->where('kondisi_nutrisi', $kondisiNutrisi)  // ← cek kondisi sama
+            ->where('id_sensor', $sensor->id_sensor)     // ← dari sensor yg sama
             ->latest('waktu_analisis')
             ->first();
+
+        if (!$analisisAda) {
+            $rekomendasi = $this->rekomendasiDariKondisi($kondisiNutrisi);
+
+            AnalisisAi::create([
+                'id_sensor'       => $sensor->id_sensor,
+                'kondisi_nutrisi' => $kondisiNutrisi,
+                'rekomendasi'     => json_encode($rekomendasi),
+                'waktu_analisis'  => now(),
+                'status_tindakan' => 'belum',
+            ]);
+        }
+    }
+
+    // ── Health score dari sensor terbaru ──
+    [$healthScore, $healthLabel] = $this->hitungHealthScore($sensor);
+
+    // ── Ambil 1 kondisi aktif terbaru ──
+    $analisis = AnalisisAi::with('dataSensor')
+        ->where('status_tindakan', '!=', 'selesai')
+        ->latest('waktu_analisis')
+        ->first();
 
         $kondisiAktif = null;
         if ($analisis) {

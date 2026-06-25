@@ -163,7 +163,7 @@
                     <i class="fa-solid fa-bell text-yellow-500"></i>
                     <p class="text-sm font-semibold text-gray-700">Alert Terbaru</p>
                 </div>
-                <a href="#" class="text-xs text-green-600 font-semibold hover:underline flex items-center gap-1">
+                <a href="{{ route('rekomendasi') }}" class="text-xs text-green-600 font-semibold hover:underline flex items-center gap-1">
                     Kelola <i class="fa-solid fa-arrow-right text-xs"></i>
                 </a>
             </div>

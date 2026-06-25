@@ -12,7 +12,7 @@ class SensorController extends Controller
     {
         try {
             $data = DataSensor::create([
-                'id_device'    => 1,
+                'id_device'    => 3,
                 'ph'           => $request->ph,
                 'suhu'         => $request->suhu,
                 'ec_tds'       => $request->tds,
