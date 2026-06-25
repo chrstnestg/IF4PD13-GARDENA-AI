@@ -2,52 +2,50 @@
 
 namespace App\Services;
 
-use Illuminate\Support\Facades\Http;
 use App\Models\DataSensor;
 use App\Models\AnalisisAi;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 
 class PrediksiService
 {
-    protected string $fastapiUrl = 'http://127.0.0.1:8001';
-
-    public function analisisAndSave(int $idSensor): void
+    public function analisisAndSave($id_sensor)
     {
-        // Ambil 20 data sensor terbaru (urut dari lama ke baru)
-        $readings = DataSensor::latest('dibaca_pada')
-            ->take(20)
-            ->get()
-            ->reverse()
-            ->values()
-            ->map(fn($r) => [
-                (float) $r->ph,
-                (float) $r->ec_tds,
-                (float) $r->suhu,
-            ])
-            ->toArray();
+        $sensor = DataSensor::find($id_sensor);
 
-        // Minimal harus ada 20 data
-        if (count($readings) < 20) return;
+        if (!$sensor) {
+            return false;
+        }
 
-        // Panggil FastAPI
-        $response = Http::timeout(10)->post("{$this->fastapiUrl}/predict", [
-            'data' => $readings
-        ]);
+        try {
+            // Tembak ke FastAPI main.py di port 8000
+            $response = Http::timeout(5)->post('http://127.0.0.1:8001/predict', [
+                'ph'   => (float) $sensor->ph,
+                'tds'  => (float) $sensor->ec_tds, 
+                'suhu' => (float) $sensor->suhu,
+            ]);
 
-        if ($response->failed()) return;
+            if ($response->successful()) {
+                $hasilAi = $response->json();
 
-        $hasil       = $response->json();
-        $kondisiBaru = $hasil['kondisi'];
+                // Simpan hasil kondisi dan rekomendasi dari AI ke database
+                AnalisisAi::create([
+                    'id_sensor'       => $sensor->id_sensor,
+                    'kondisi_nutrisi' => $hasilAi['kondisi'],
+                    'rekomendasi'     => json_encode($hasilAi['rekomendasi']), 
+                    'waktu_analisis'  => now(),
+                    'status_tindakan' => 'belum',
+                ]);
 
-        // Hanya simpan kalau kondisi BERUBAH
-        $analisisTerakhir = AnalisisAi::latest('waktu_analisis')->first();
-        if ($analisisTerakhir && $analisisTerakhir->kondisi_nutrisi === $kondisiBaru) return;
+                return true;
+            }
 
-        AnalisisAi::create([
-            'id_sensor'       => $idSensor,
-            'kondisi_nutrisi' => $kondisiBaru,
-            'rekomendasi'     => json_encode($hasil['rekomendasi']),
-            'waktu_analisis'  => now(),
-            'status_tindakan' => 'belum',
-        ]);
+            Log::error('GARDENA AI Error: Python gagal merespon.');
+            return false;
+
+        } catch (\Exception $e) {
+            Log::error('GARDENA AI Error: Gagal konek ke Python. ' . $e->getMessage());
+            return false;
+        }
     }
 }

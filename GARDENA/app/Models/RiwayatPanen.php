@@ -6,18 +6,26 @@ use Illuminate\Database\Eloquent\Model;
 
 class RiwayatPanen extends Model
 {
-    protected $table    = 'riwayat_panen';
+    // 1. Hubungkan ke nama tabel database yang baru hasil migration
+    protected $table = 'riwayat_anomali';
 
+    // 2. Sesuaikan amunisi kolom baru untuk mencatat data anomali sensor & AI
     protected $fillable = [
-        'id_user', 'id_device', 'siklus', 'tanggal_panen',
-        'berat_panen', 'jumlah_ikat', 'kualitas', 'avg_health',
-        'avg_tds', 'avg_ph', 'avg_suhu', 'avg_kelembapan', 'catatan',
+        'id_user', 
+        'id_device', 
+        'status_anomali',   // Hasil gabungan hybrid dari Python (misal: "pH Rendah + Nutrisi Kurang")
+        'rekomendasi_ai',   // List tindakan penanganan langsung dari FastAPI Python
+        'nilai_ph',         // Nilai pH real-time saat kejadian
+        'nilai_tds',        // Nilai TDS real-time saat kejadian
+        'nilai_suhu',       // Nilai suhu real-time saat kejadian
+        'status_perbaikan', // Status 'Pending' atau 'Teratasi'
     ];
 
-    protected $casts = [
-        'tanggal_panen' => 'date',
-    ];
+    // Kolom tanggal_panen sudah dihapus, jadi protected $casts lama dibuang saja
 
+    /* ─────────────────────────────────────────
+     | Relasi Database
+     ───────────────────────────────────────── */
     public function user()
     {
         return $this->belongsTo(User::class, 'id_user');
