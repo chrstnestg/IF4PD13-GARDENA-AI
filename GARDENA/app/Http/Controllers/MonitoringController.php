@@ -9,10 +9,10 @@ class MonitoringController extends Controller
     public function index()
     {
         // data terbaru
-        $sensor = DataSensor::latest('dibaca_pada')->first();
+        $sensor = DataSensor::orderBy('id_sensor', 'desc')->first();
 
         // history chart
-        $history = DataSensor::latest('dibaca_pada')
+        $history = DataSensor::orderBy('id_sensor', 'desc')
             ->take(10)
             ->get()
             ->reverse();

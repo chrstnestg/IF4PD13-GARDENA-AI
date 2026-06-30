@@ -9,7 +9,6 @@
     <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
     <style>
@@ -81,23 +80,37 @@
             {{-- ================= DATA DIRI ================= --}}
             <div x-show="active==='profil'" class="bg-white p-6 rounded-xl shadow-sm border">
 
-                <h2 class="font-bold mb-4">Data Diri</h2>
+                <h2 class="font-bold mb-4 text-gray-800">Data Diri</h2>
 
                 <form action="/pengaturan/update-profil" method="POST" class="space-y-4">
                     @csrf
 
-                    <input type="text" name="name" value="{{ Auth::user()->name }}"
-                        class="w-full border p-3 rounded-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Nama Lengkap</label>
+                        <input type="text" name="name" value="{{ Auth::user()->name }}"
+                            class="w-full border p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                    </div>
 
-                    <input type="text" name="username" value="{{ Auth::user()->username }}"
-                        class="w-full border p-3 rounded-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Username</label>
+                        <input type="text" name="username" value="{{ Auth::user()->username }}"
+                            class="w-full border p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                    </div>
 
-                    <input type="email" name="email" value="{{ Auth::user()->email }}"
-                        class="w-full border p-3 rounded-lg">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-500 mb-1">Email</label>
+                        <input type="email" name="email" value="{{ Auth::user()->email }}"
+                            class="w-full border p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
+                    </div>
 
-                    <button class="bg-green-600 text-white px-6 py-3 rounded-lg">
-                        Simpan
-                    </button>
+                    <div class="flex items-center gap-2 pt-2">
+                        <button type="submit" class="bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow-sm">
+                            Simpan Perubahan
+                        </button>
+                        <a href="{{ url()->previous() }}" class="border border-gray-200 text-gray-500 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition text-center">
+                            Kembali
+                        </a>
+                    </div>
                 </form>
 
             </div>
@@ -105,7 +118,7 @@
             {{-- ================= PASSWORD ================= --}}
             <div x-show="active==='keamanan'" class="bg-white p-6 rounded-xl shadow-sm border">
 
-                <h2 class="font-bold mb-4">Ubah Password</h2>
+                <h2 class="font-bold mb-4 text-gray-800">Ubah Password</h2>
 
                 <form action="/pengaturan/update-password" method="POST" class="space-y-4">
                     @csrf
@@ -113,24 +126,29 @@
                     <div>
                         <label class="block text-sm text-gray-600 mb-1">Password Lama</label>
                         <input type="password" name="password_lama" placeholder="Masukkan password lama"
-                            class="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                            class="w-full border p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                     </div>
 
                     <div>
                         <label class="block text-sm text-gray-600 mb-1">Password Baru</label>
                         <input type="password" name="password_baru" placeholder="Masukkan password baru"
-                            class="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                            class="w-full border p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                     </div>
 
                     <div>
                         <label class="block text-sm text-gray-600 mb-1">Konfirmasi Password Baru</label>
                         <input type="password" name="password_baru_confirmation" placeholder="Ulangi password baru"
-                            class="w-full border p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400">
+                            class="w-full border p-3 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-green-400">
                     </div>
 
-                    <button type="submit" class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition">
-                        Ubah Password
-                    </button>
+                    <div class="flex items-center gap-2 pt-2">
+                        <button type="submit" class="bg-green-600 text-white px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-green-700 transition shadow-sm">
+                            Ubah Password
+                        </button>
+                        <a href="{{ url()->previous() }}" class="border border-gray-200 text-gray-500 px-5 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-50 transition text-center">
+                            Kembali
+                        </a>
+                    </div>
                 </form>
 
             </div>

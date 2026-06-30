@@ -28,8 +28,5 @@ Route::post('/rekomendasi/terapkan', [RekomendasiController::class, 'terapkan'])
 Route::post('/rekomendasi/selesai',  [RekomendasiController::class, 'selesai'])->name('rekomendasi.selesai');
 
 // ── Riwayat ──
-Route::get('/riwayat',                  [RiwayatController::class, 'index'])->name('riwayat');
-Route::get('/riwayat/tambah',           [RiwayatController::class, 'tambah'])->name('riwayat.tambah');
-Route::post('/riwayat/tambah',          [RiwayatController::class, 'store'])->name('riwayat.store');
-Route::put('/riwayat/{id}',             [RiwayatController::class, 'update'])->name('riwayat.update');
-Route::delete('/riwayat/{id}',          [RiwayatController::class, 'destroy'])->name('riwayat.destroy');
+Route::get('/riwayat', [RiwayatController::class, 'index'])->name('riwayat');
+Route::patch('/riwayat/{id}/teratasi', [RiwayatController::class, 'tandaiTeratasi'])->name('riwayat.teratasi');

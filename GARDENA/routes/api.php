@@ -8,6 +8,6 @@ Route::post('/sensor', [SensorController::class, 'store']);
 
 Route::get('/latest-sensor', function () {
 
-    return DataSensor::latest('dibaca_pada')->first();
+    return \App\Models\DataSensor::orderBy('id_sensor', 'desc')->first();
 
 });

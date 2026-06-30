@@ -5,67 +5,110 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\DataSensor;
 use App\Models\AnalisisAi;
+use App\Models\RiwayatPanen; // Pastikan model riwayat ini di-import
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Auth;
+use Carbon\Carbon;
 
 class RekomendasiController extends Controller
 {
+    /**
+     * Tampilan Utama Halaman Rekomendasi
+     */
     public function index()
-{
-    // ── Ambil sensor terbaru ──
-    $sensor = DataSensor::latest('dibaca_pada')->first();
+    {
+        $sensor = DataSensor::orderBy('id_sensor', 'desc')->first();
 
-    // ── Selalu generate analisis baru berdasarkan sensor terbaru ──
-    if ($sensor) {
-        $kondisiNutrisi = $this->tentukanKondisi($sensor);
+        $healthScore = 0;
+        $healthLabel = 'Tidak Ada Data';
+        $sisaDetikCooldown = 0;
 
-        $analisisAda = AnalisisAi::where('status_tindakan', '!=', 'selesai')
-            ->where('kondisi_nutrisi', $kondisiNutrisi)  // ← cek kondisi sama
-            ->where('id_sensor', $sensor->id_sensor)     // ← dari sensor yg sama
-            ->latest('waktu_analisis')
-            ->first();
+        // 1. CEK STATUS COOLDOWN VIA CACHE SERVER
+        $sedangCooldown = Cache::has('rekomendasi_cooldown');
 
-        if (!$analisisAda) {
-            $rekomendasi = $this->rekomendasiDariKondisi($kondisiNutrisi);
-
-            AnalisisAi::create([
-                'id_sensor'       => $sensor->id_sensor,
-                'kondisi_nutrisi' => $kondisiNutrisi,
-                'rekomendasi'     => json_encode($rekomendasi),
-                'waktu_analisis'  => now(),
-                'status_tindakan' => 'belum',
-            ]);
+        if ($sedangCooldown) {
+            // Hitung sisa waktu cooldown dalam detik agar bisa ditampilkan di UI
+            $waktuSelesaiCooldown = Cache::get('rekomendasi_cooldown_expires_at');
+            if ($waktuSelesaiCooldown) {
+                $sisaDetikCooldown = max(0, now()->diffInSeconds($waktuSelesaiCooldown, false));
+            }
         }
-    }
 
-    // ── Health score dari sensor terbaru ──
-    [$healthScore, $healthLabel] = $this->hitungHealthScore($sensor);
+        // Sistem HANYA menembak API Python jika TIDAK sedang dalam masa cooldown
+        if ($sensor && !$sedangCooldown) {
+            try {
+                $response = Http::timeout(5)->post('http://127.0.0.1:8001/predict', [
+                    'ph'   => (float) $sensor->ph,
+                    'tds'  => (float) $sensor->ec_tds,
+                    'suhu' => (float) $sensor->suhu,
+                ]);
 
-    // ── Ambil 1 kondisi aktif terbaru ──
-    $analisis = AnalisisAi::with('dataSensor')
-        ->where('status_tindakan', '!=', 'selesai')
-        ->latest('waktu_analisis')
-        ->first();
+                if ($response->successful()) {
+                    $hasilAi = $response->json();
+
+                    $healthScore = $hasilAi['health_score'];
+                    $healthLabel = $hasilAi['status_tanaman'];
+
+                    // Cek analisis aktif berstatus 'belum'
+                    $analisisAktif = AnalisisAi::where('status_tindakan', 'belum')
+                        ->latest('waktu_analisis')
+                        ->first();
+
+                    // Buat analisis baru jika belum ada yang aktif
+                    if (!$analisisAktif) {
+                        AnalisisAi::create([
+                            'id_sensor'       => $sensor->id_sensor,
+                            'kondisi_nutrisi' => $hasilAi['kondisi'],
+                            'rekomendasi'     => json_encode($hasilAi['rekomendasi']),
+                            'waktu_analisis'  => now(),
+                            'status_tindakan' => $hasilAi['kondisi'] === 'Normal' ? 'selesai' : 'belum',
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                report($e);
+                $healthScore = 50;
+                $healthLabel = 'API Python Offline';
+            }
+        }
+
+        // 2. KONDISI TAMPILAN DATA (JIKA COOLDOWN VS TIDAK COOLDOWN)
+        if ($sedangCooldown) {
+            $analisis = null;
+            if ($sensor) {
+                $healthScore = 100; 
+                $healthLabel = 'Stabil';
+            }
+        } else {
+            $analisis = AnalisisAi::with('dataSensor')
+                ->where('status_tindakan', 'belum')
+                ->latest('waktu_analisis')
+                ->first();
+        }
 
         $kondisiAktif = null;
         if ($analisis) {
-            $kondisi = $analisis->kondisi_nutrisi;
-            $isNormal = ($kondisi === 'Normal');
+            $kondisi         = $analisis->kondisi_nutrisi;
+            $isNormal        = ($kondisi === 'Normal');
+            $rekomendasiList = json_decode($analisis->rekomendasi, true) ?? [];
 
             $kondisiAktif = [
                 'id'           => $analisis->id_analisis,
                 'judul'        => $isNormal ? 'Kondisi Normal' : 'Terdeteksi Masalah: ' . $kondisi,
                 'status'       => $kondisi,
-                'labelStatus'  => $isNormal ? 'Optimal' : (str_contains($kondisi, 'pH Rendah') ? 'Kritis' : 'Peringatan'),
+                'labelStatus'  => $isNormal ? 'Optimal' : (str_contains($kondisi, 'pH') ? 'Kritis' : 'Peringatan'),
                 'nilaiSaatIni' => $sensor ? "TDS: {$sensor->ec_tds} ppm | pH: {$sensor->ph} | Suhu: {$sensor->suhu}°C" : '-',
-                'nilaiOptimal' => 'TDS: 800–1400 ppm | pH: 5.5–6.5 | Suhu: 18–25°C',
+                'nilaiOptimal' => 'TDS: 400–1200 ppm | pH: 6.0–8.0 | Suhu: 20–28°C',
                 'deskripsi'    => $isNormal ? 'Semua parameter dalam kondisi optimal.' : 'Sistem mendeteksi adanya ketidaksesuaian parameter pada larutan nutrisi sawi putih.',
-                'aksiList'     => json_decode($analisis->rekomendasi, true) ?? [], // LANGSUNG BACA 3 REKOMENDASI DARI PYTHON
+                'aksiList'     => $rekomendasiList,
                 'kritis'       => !$isNormal,
                 'pesanKritis'  => $isNormal ? null : 'Segera lakukan tindakan penanganan sesuai instruksi AI di bawah ini.',
                 'isNormal'     => $isNormal,
             ];
         }
 
-        // 4. Data untuk Chart 7 Hari (Dipertahankan)
+        // Data Chart 7 Hari
         $chartLabels = $chartTds = $chartPh = $chartSuhu = [];
         for ($i = 6; $i >= 0; $i--) {
             $tanggal       = now()->subDays($i);
@@ -77,45 +120,63 @@ class RekomendasiController extends Controller
         }
 
         return view('pages.rekomendasi', compact(
-            'kondisiAktif', 'healthScore', 'healthLabel',
-            'chartLabels', 'chartTds', 'chartPh', 'chartSuhu'
+            'kondisiAktif',
+            'healthScore',
+            'healthLabel',
+            'chartLabels',
+            'chartTds',
+            'chartPh',
+            'chartSuhu',
+            'sedangCooldown',
+            'sisaDetikCooldown'
         ));
     }
 
+    /**
+     * Aksi Saat Tombol "Sudah Ditangani" Ditekan
+     */
     public function selesai(Request $request)
     {
         $request->validate(['nutrisi_id' => 'required']);
-        AnalisisAi::where('id_analisis', $request->nutrisi_id)->update(['status_tindakan' => 'selesai']);
 
-        return redirect()->route('rekomendasi')->with('success', 'Tindakan dicatat sebagai sudah dilakukan.');
-    }
+        // 1. Cari data analisis yang aktif beserta relasi sensornya
+        $analisis = AnalisisAi::with('dataSensor')->find($request->nutrisi_id);
 
-    private function hitungHealthScore(?DataSensor $sensor): array
-    {
-        if (!$sensor) return [0, 'Tidak Ada Data'];
-        $skor = 100;
+        if ($analisis) {
+            // Ubah status tindakan menjadi selesai di tabel analisis_ai
+            $analisis->update(['status_tindakan' => 'selesai']);
 
-        if ($sensor->ph < 5.0) $skor -= 40;
-        elseif ($sensor->ph < 5.5) $skor -= 25;
-        if ($sensor->ph > 7.0) $skor -= 30;
-        elseif ($sensor->ph > 6.5) $skor -= 15;
+            // 2. GABUNGKAN ARRAY REKOMENDASI MENJADI STRING
+            $rekomendasiArray = json_decode($analisis->rekomendasi, true) ?? [];
+            $rekomendasiString = !empty($rekomendasiArray) 
+                ? implode(" | ", $rekomendasiArray) 
+                : 'Tidak ada rekomendasi tindakan.';
 
-        if ($sensor->ec_tds < 800) $skor -= 25;
-        elseif ($sensor->ec_tds < 1000) $skor -= 15;
-        if ($sensor->ec_tds > 1800) $skor -= 20;
-        elseif ($sensor->ec_tds > 1500) $skor -= 10;
+            // 3. SELESAI & MASUKKAN LANGSUNG KE RIWAYAT ANOMALI (RiwayatPanen)
+            RiwayatPanen::create([
+                'id_user'          => Auth::id(), // ID User Petani yang login
+                'status_anomali'   => $analisis->kondisi_nutrisi,
+                'rekomendasi_ai'   => $rekomendasiString,
+                'status_perbaikan' => 'Teratasi', // Status langsung diset Teratasi
+                'nilai_ph'         => $analisis->dataSensor ? $analisis->dataSensor->ph : null,
+                'nilai_tds'        => $analisis->dataSensor ? $analisis->dataSensor->ec_tds : null,
+                'nilai_suhu'       => $analisis->dataSensor ? $analisis->dataSensor->suhu : null,
+                'created_at'       => now(),
+                'updated_at'       => now(),
+            ]);
+        }
 
-        if ($sensor->suhu < 18 || $sensor->suhu > 25) $skor -= 15;
+        // 4. SET LOCK TIMER COOLDOWN SELAMA 5 MENIT DI CACHE SERVER
+        $waktuHabis = now()->addMinutes(5);
+        Cache::put('rekomendasi_cooldown', true, $waktuHabis);
+        Cache::put('rekomendasi_cooldown_expires_at', $waktuHabis, $waktuHabis);
 
-        $skor = max(0, $skor);
-        $label = match(true) {
-            $skor >= 90 => 'Sangat Sehat',
-            $skor >= 75 => 'Sehat',
-            $skor >= 60 => 'Sedang',
-            $skor >= 40 => 'Perlu Perhatian',
-            default     => 'Kritis',
-        };
-
-        return [$skor, $label];
+        return redirect()
+            ->route('rekomendasi')
+            ->with('swal', [
+                'icon'  => 'success',
+                'title' => 'Berhasil Dicatat!',
+                'text'  => 'Tindakan tersimpan ke Riwayat. Sistem di-jeda selama 5 menit untuk sirkulasi air.',
+            ]);
     }
 }
