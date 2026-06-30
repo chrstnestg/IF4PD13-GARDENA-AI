@@ -115,5 +115,7 @@ def predict(input: SensorInput):
         raise HTTPException(status_code=400, detail=str(e))
 
 if __name__ == '__main__':
+    import os
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8001, reload=True)
+    port = int(os.environ.get("PORT", 8001))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
