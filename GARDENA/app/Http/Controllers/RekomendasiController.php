@@ -24,12 +24,13 @@ class RekomendasiController extends Controller
         $healthLabel = 'Tidak Ada Data';
         $sisaDetikCooldown = 0;
 
-        // 1. CEK STATUS COOLDOWN VIA CACHE SERVER
-        $sedangCooldown = Cache::has('rekomendasi_cooldown');
+        // 1. CEK STATUS COOLDOWN VIA CACHE SERVER (Spesifik per User)
+        $userId = Auth::id();
+        $sedangCooldown = Cache::has('rekomendasi_cooldown_' . $userId);
 
         if ($sedangCooldown) {
-            // Hitung sisa waktu cooldown dalam detik agar bisa ditampilkan di UI
-            $waktuSelesaiCooldown = Cache::get('rekomendasi_cooldown_expires_at');
+            // Hitung sisa waktu cooldown dalam detik khusus user ini agar bisa ditampilkan di UI
+            $waktuSelesaiCooldown = Cache::get('rekomendasi_cooldown_expires_at_' . $userId);
             if ($waktuSelesaiCooldown) {
                 $sisaDetikCooldown = max(0, now()->diffInSeconds($waktuSelesaiCooldown, false));
             }
@@ -166,10 +167,11 @@ class RekomendasiController extends Controller
             ]);
         }
 
-        // 4. SET LOCK TIMER COOLDOWN SELAMA 5 MENIT DI CACHE SERVER
+        // 4. SET LOCK TIMER COOLDOWN SELAMA 5 MENIT DI CACHE SERVER (Spesifik per User)
+        $userId = Auth::id();
         $waktuHabis = now()->addMinutes(5);
-        Cache::put('rekomendasi_cooldown', true, $waktuHabis);
-        Cache::put('rekomendasi_cooldown_expires_at', $waktuHabis, $waktuHabis);
+        Cache::put('rekomendasi_cooldown_' . $userId, true, $waktuHabis);
+        Cache::put('rekomendasi_cooldown_expires_at_' . $userId, $waktuHabis, $waktuHabis);
 
         return redirect()
             ->route('rekomendasi')

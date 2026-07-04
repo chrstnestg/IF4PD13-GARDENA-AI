@@ -69,7 +69,9 @@ class AuthController extends Controller
             'password' => $request->password
         ])) {
             $request->session()->regenerate();
-            return redirect('/monitoring');
+            
+            // 🔴 DIUBAH: Redirect kembali ke halaman login membawa flash session sukses login
+            return redirect('/login')->with('login_success', 'Anda berhasil masuk ke sistem!');
         }
 
         return back()->withErrors([
