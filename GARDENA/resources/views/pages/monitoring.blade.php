@@ -15,16 +15,16 @@
 
 @php
     $phStatus = 'Normal'; $phColor = 'green';
-    if($sensor && $sensor->ph < 5.5){ $phStatus = 'Terlalu Asam'; $phColor = 'red'; }
-    elseif($sensor && $sensor->ph > 6.5){ $phStatus = 'Terlalu Basa'; $phColor = 'yellow'; }
+    if($sensor && $sensor->ph < 6.0){ $phStatus = 'Terlalu Asam'; $phColor = 'red'; }
+    elseif($sensor && $sensor->ph > 8.0){ $phStatus = 'Terlalu Basa'; $phColor = 'yellow'; }
 
     $tdsStatus = 'Normal'; $tdsColor = 'green';
-    if($sensor && $sensor->ec_tds < 800){ $tdsStatus = 'Rendah'; $tdsColor = 'red'; }
-    elseif($sensor && $sensor->ec_tds > 1400){ $tdsStatus = 'Tinggi'; $tdsColor = 'yellow'; }
+    if($sensor && $sensor->ec_tds < 400){ $tdsStatus = 'Rendah'; $tdsColor = 'red'; }
+    elseif($sensor && $sensor->ec_tds > 1200){ $tdsStatus = 'Tinggi'; $tdsColor = 'yellow'; }
 
     $suhuStatus = 'Normal'; $suhuColor = 'green';
     if($sensor && $sensor->suhu < 20){ $suhuStatus = 'Dingin'; $suhuColor = 'red'; }
-    elseif($sensor && $sensor->suhu > 30){ $suhuStatus = 'Panas'; $suhuColor = 'red'; }
+    elseif($sensor && $sensor->suhu > 28){ $suhuStatus = 'Panas'; $suhuColor = 'red'; }
 @endphp
 
 {{-- 3 SENSOR CARDS --}}
@@ -55,7 +55,7 @@
         </div>
         <div class="flex justify-between text-xs text-gray-400">
             <span>0°C</span>
-            <span>Optimal: 20°C - 30°C</span>
+            <span>Optimal: 20°C - 28°C</span>
             <span>40°C</span>
         </div>
     </div>
@@ -85,7 +85,7 @@
         </div>
         <div class="flex justify-between text-xs text-gray-400">
             <span>0</span>
-            <span>Optimal: 800 - 1400 ppm</span>
+            <span>Optimal: 400 - 1200 ppm</span>
             <span>2000</span>
         </div>
     </div>
@@ -115,7 +115,7 @@
         </div>
         <div class="flex justify-between text-xs text-gray-400">
             <span>0</span>
-            <span>Optimal: 5.5 - 6.5</span>
+            <span>Optimal: 6.0 - 8.0</span>
             <span>14</span>
         </div>
     </div>
@@ -171,7 +171,7 @@
             <div class="space-y-4">
 
                     {{-- Alert pH --}}
-                    @if($sensor && $sensor->ph < 5.5)
+                    @if($sensor && $sensor->ph < 6.0)
                     <div class="flex items-stretch gap-0 bg-red-50 border border-red-100 rounded-lg overflow-hidden">
                         <div class="w-1 bg-red-500 flex-shrink-0"></div>
                         <div class="px-3 py-2.5">
@@ -179,7 +179,7 @@
                             <p class="text-xs text-gray-400">{{ number_format($sensor->ph, 2) }} pH — Perlu perhatian</p>
                         </div>
                     </div>
-                    @elseif($sensor && $sensor->ph > 6.5)
+                    @elseif($sensor && $sensor->ph > 8.0)
                     <div class="flex items-stretch gap-0 bg-yellow-50 border border-yellow-100 rounded-lg overflow-hidden">
                         <div class="w-1 bg-yellow-500 flex-shrink-0"></div>
                         <div class="px-3 py-2.5">
@@ -198,7 +198,7 @@
                     @endif
 
                     {{-- Alert TDS --}}
-                    @if($sensor && $sensor->ec_tds < 800)
+                    @if($sensor && $sensor->ec_tds < 400)
                     <div class="flex items-stretch gap-0 bg-red-50 border border-red-100 rounded-lg overflow-hidden">
                         <div class="w-1 bg-red-500 flex-shrink-0"></div>
                         <div class="px-3 py-2.5">
@@ -206,7 +206,7 @@
                             <p class="text-xs text-gray-400">{{ number_format($sensor->ec_tds, 0) }} ppm — Tambah nutrisi</p>
                         </div>
                     </div>
-                    @elseif($sensor && $sensor->ec_tds > 1400)
+                    @elseif($sensor && $sensor->ec_tds > 1200)
                     <div class="flex items-stretch gap-0 bg-yellow-50 border border-yellow-100 rounded-lg overflow-hidden">
                         <div class="w-1 bg-yellow-500 flex-shrink-0"></div>
                         <div class="px-3 py-2.5">
@@ -225,7 +225,7 @@
                     @endif
 
                     {{-- Alert Suhu --}}
-                    @if($sensor && $sensor->suhu > 30)
+                    @if($sensor && $sensor->suhu > 28)
                     <div class="flex items-stretch gap-0 bg-red-50 border border-red-100 rounded-lg overflow-hidden">
                         <div class="w-1 bg-red-500 flex-shrink-0"></div>
                         <div class="px-3 py-2.5">
