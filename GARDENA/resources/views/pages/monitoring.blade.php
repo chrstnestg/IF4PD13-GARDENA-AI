@@ -27,16 +27,16 @@
 
 @php
     $phStatus = 'Normal'; $phColor = 'green';
-    if($sensor && $sensor->ph < 5.5){ $phStatus = 'Terlalu Asam'; $phColor = 'red'; }
-    elseif($sensor && $sensor->ph > 6.5){ $phStatus = 'Terlalu Basa'; $phColor = 'yellow'; }
+    if($sensor && $sensor->ph < 6.0){ $phStatus = 'Terlalu Asam'; $phColor = 'red'; }
+    elseif($sensor && $sensor->ph > 8.0){ $phStatus = 'Terlalu Basa'; $phColor = 'yellow'; }
 
     $tdsStatus = 'Normal'; $tdsColor = 'green';
-    if($sensor && $sensor->ec_tds < 800){ $tdsStatus = 'Rendah'; $tdsColor = 'red'; }
-    elseif($sensor && $sensor->ec_tds > 1400){ $tdsStatus = 'Tinggi'; $tdsColor = 'yellow'; }
+    if($sensor && $sensor->ec_tds < 400){ $tdsStatus = 'Rendah'; $tdsColor = 'red'; }
+    elseif($sensor && $sensor->ec_tds > 1200){ $tdsStatus = 'Tinggi'; $tdsColor = 'yellow'; }
 
     $suhuStatus = 'Normal'; $suhuColor = 'green';
     if($sensor && $sensor->suhu < 20){ $suhuStatus = 'Dingin'; $suhuColor = 'blue'; }
-    elseif($sensor && $sensor->suhu > 30){ $suhuStatus = 'Panas'; $suhuColor = 'red'; }
+    elseif($sensor && $sensor->suhu > 28){ $suhuStatus = 'Panas'; $suhuColor = 'red'; }
 @endphp
 
 {{-- 3 SENSOR CARDS --}}
@@ -67,7 +67,7 @@
         </div>
         <div class="flex justify-between text-xs text-gray-400">
             <span>0°C</span>
-            <span class="font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Optimal: 25°C - 30°C</span>
+            <span class="font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Optimal: 20°C - 28°C</span>
             <span>40°C</span>
         </div>
     </div>
@@ -127,7 +127,7 @@
         </div>
         <div class="flex justify-between text-xs text-gray-400">
             <span>0</span>
-            <span class="font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Optimal: 6.0 - 7.5</span>
+            <span class="font-medium text-gray-500 bg-gray-100 px-1.5 py-0.5 rounded">Optimal: 6.0 - 8.0</span>
             <span>14</span>
         </div>
     </div>
@@ -188,19 +188,19 @@
 
             <div id="alert-list-container" class="space-y-4">
                 {{-- Alert pH --}}
-                @if($sensor && $sensor->ph < 5.5)
+                @if($sensor && $sensor->ph < 6.0)
                 <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
                     <i class="fa-solid fa-circle-exclamation text-red-500 text-base flex-shrink-0"></i>
                     <div>
-                        <p class="text-xs font-bold text-red-800">pH Terlalu Asam (Batas: 5.5 - 6.5)</p>
+                        <p class="text-xs font-bold text-red-800">pH Terlalu Asam (Batas: 6.0 - 8.0)</p>
                         <p class="text-xs text-red-700 font-medium">Kondisi: {{ number_format($sensor->ph, 2) }} pH — Perlu perhatian!</p>
                     </div>
                 </div>
-                @elseif($sensor && $sensor->ph > 6.5)
+                @elseif($sensor && $sensor->ph > 8.0)
                 <div class="flex items-center gap-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                     <i class="fa-solid fa-triangle-exclamation text-yellow-600 text-base flex-shrink-0"></i>
                     <div>
-                        <p class="text-xs font-bold text-yellow-800">pH Terlalu Basa (Batas: 5.5 - 6.5)</p>
+                        <p class="text-xs font-bold text-yellow-800">pH Terlalu Basa (Batas: 6.0 - 8.0)</p>
                         <p class="text-xs text-yellow-700 font-medium">Kondisi: {{ number_format($sensor->ph, 2) }} pH — Perlu perhatian!</p>
                     </div>
                 </div>
@@ -215,19 +215,19 @@
                 @endif
 
                 {{-- Alert TDS --}}
-                @if($sensor && $sensor->ec_tds < 800)
+                @if($sensor && $sensor->ec_tds < 400)
                 <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
                     <i class="fa-solid fa-circle-exclamation text-red-500 text-base flex-shrink-0"></i>
                     <div>
-                        <p class="text-xs font-bold text-red-800">TDS Terlalu Rendah (Batas: 800 - 1400)</p>
+                        <p class="text-xs font-bold text-red-800">TDS Terlalu Rendah (Batas: 400 - 1200)</p>
                         <p class="text-xs text-red-700 font-medium">Kondisi: {{ number_format($sensor->ec_tds, 0) }} ppm — Tambah nutrisi!</p>
                     </div>
                 </div>
-                @elseif($sensor && $sensor->ec_tds > 1400)
+                @elseif($sensor && $sensor->ec_tds > 1200)
                 <div class="flex items-center gap-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                     <i class="fa-solid fa-triangle-exclamation text-yellow-600 text-base flex-shrink-0"></i>
                     <div>
-                        <p class="text-xs font-bold text-yellow-800">TDS Terlalu Tinggi (Batas: 800 - 1400)</p>
+                        <p class="text-xs font-bold text-yellow-800">TDS Terlalu Tinggi (Batas: 400 - 1200)</p>
                         <p class="text-xs text-yellow-700 font-medium">Kondisi: {{ number_format($sensor->ec_tds, 0) }} ppm — Encerkan larutan!</p>
                     </div>
                 </div>
@@ -242,11 +242,11 @@
                 @endif
 
                 {{-- Alert Suhu --}}
-                @if($sensor && $sensor->suhu > 30)
+                @if($sensor && $sensor->suhu > 28)
                 <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
                     <i class="fa-solid fa-circle-exclamation text-red-500 text-base flex-shrink-0"></i>
                     <div>
-                        <p class="text-xs font-bold text-red-800">Suhu Terlalu Panas (Batas: 20 - 30)</p>
+                        <p class="text-xs font-bold text-red-800">Suhu Terlalu Panas (Batas: 20 - 28)</p>
                         <p class="text-xs text-red-700 font-medium">Kondisi: {{ number_format($sensor->suhu, 1) }} °C — Perlu pendingin!</p>
                     </div>
                 </div>
@@ -254,7 +254,7 @@
                 <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                     <i class="fa-solid fa-circle-exclamation text-blue-500 text-base flex-shrink-0"></i>
                     <div>
-                        <p class="text-xs font-bold text-blue-800">Suhu Terlalu Dingin (Batas: 20 - 30)</p>
+                        <p class="text-xs font-bold text-blue-800">Suhu Terlalu Dingin (Batas: 20 - 28)</p>
                         <p class="text-xs text-blue-700 font-medium">Kondisi: {{ number_format($sensor->suhu, 1) }} °C — Perlu pemanas!</p>
                     </div>
                 </div>
@@ -420,17 +420,17 @@ function updateStatusBadgesAndAlerts(suhu, tds, ph) {
             <div class="flex items-center gap-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                 <i class="fa-solid fa-circle-exclamation text-blue-500 text-base flex-shrink-0"></i>
                 <div>
-                    <p class="text-xs font-bold text-blue-800">Suhu Terlalu Dingin (Batas: 20 - 30)</p>
+                    <p class="text-xs font-bold text-blue-800">Suhu Terlalu Dingin (Batas: 20 - 28)</p>
                     <p class="text-xs text-blue-700 font-medium">Kondisi: ${suhu.toFixed(1)} °C — Perlu pemanas!</p>
                 </div>
             </div>`;
-    } else if(suhu > 30) { 
+    } else if(suhu > 28) { 
         suhuStatus = 'Panas'; suhuColor = 'red'; 
         suhuAlertHtml = `
             <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
                 <i class="fa-solid fa-circle-exclamation text-red-500 text-base flex-shrink-0"></i>
                 <div>
-                    <p class="text-xs font-bold text-red-800">Suhu Terlalu Panas (Batas: 20 - 30)</p>
+                    <p class="text-xs font-bold text-red-800">Suhu Terlalu Panas (Batas: 20 - 28)</p>
                     <p class="text-xs text-red-700 font-medium">Kondisi: ${suhu.toFixed(1)} °C — Perlu pendingin!</p>
                 </div>
             </div>`;
@@ -447,23 +447,23 @@ function updateStatusBadgesAndAlerts(suhu, tds, ph) {
 
     // Logic TDS
     let tdsStatus = 'Normal', tdsColor = 'green', tdsAlertHtml = '';
-    if(tds < 800) { 
+    if(tds < 400) { 
         tdsStatus = 'Rendah'; tdsColor = 'red'; 
         tdsAlertHtml = `
             <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
                 <i class="fa-solid fa-circle-exclamation text-red-500 text-base flex-shrink-0"></i>
                 <div>
-                    <p class="text-xs font-bold text-red-800">TDS Terlalu Rendah (Batas: 800 - 1400)</p>
+                    <p class="text-xs font-bold text-red-800">TDS Terlalu Rendah (Batas: 400 - 1200)</p>
                     <p class="text-xs text-red-700 font-medium">Kondisi: ${tds.toFixed(0)} ppm — Tambah nutrisi!</p>
                 </div>
             </div>`;
-    } else if(tds > 1400) { 
+    } else if(tds > 1200) { 
         tdsStatus = 'Tinggi'; tdsColor = 'yellow'; 
         tdsAlertHtml = `
             <div class="flex items-center gap-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                 <i class="fa-solid fa-triangle-exclamation text-yellow-600 text-base flex-shrink-0"></i>
                 <div>
-                    <p class="text-xs font-bold text-yellow-800">TDS Terlalu Tinggi (Batas: 800 - 1400)</p>
+                    <p class="text-xs font-bold text-yellow-800">TDS Terlalu Tinggi (Batas: 400 - 1200)</p>
                     <p class="text-xs text-yellow-700 font-medium">Kondisi: ${tds.toFixed(0)} ppm — Encerkan larutan!</p>
                 </div>
             </div>`;
@@ -480,23 +480,23 @@ function updateStatusBadgesAndAlerts(suhu, tds, ph) {
 
     // Logic pH
     let phStatus = 'Normal', phColor = 'green', phAlertHtml = '';
-    if(ph < 5.5) { 
+    if(ph < 6.0) { 
         phStatus = 'Terlalu Asam'; phColor = 'red'; 
         phAlertHtml = `
             <div class="flex items-center gap-3 bg-red-50 border border-red-200 rounded-lg p-3">
                 <i class="fa-solid fa-circle-exclamation text-red-500 text-base flex-shrink-0"></i>
                 <div>
-                    <p class="text-xs font-bold text-red-800">pH Terlalu Asam (Batas: 5.5 - 6.5)</p>
+                    <p class="text-xs font-bold text-red-800">pH Terlalu Asam (Batas: 6.0 - 8.0)</p>
                     <p class="text-xs text-red-700 font-medium">Kondisi: ${ph.toFixed(2)} pH — Perlu perhatian!</p>
                 </div>
             </div>`;
-    } else if(ph > 6.5) { 
+    } else if(ph > 8.0) { 
         phStatus = 'Terlalu Basa'; phColor = 'yellow'; 
         phAlertHtml = `
             <div class="flex items-center gap-3 bg-yellow-50 border border-yellow-300 rounded-lg p-3">
                 <i class="fa-solid fa-triangle-exclamation text-yellow-600 text-base flex-shrink-0"></i>
                 <div>
-                    <p class="text-xs font-bold text-yellow-800">pH Terlalu Basa (Batas: 5.5 - 6.5)</p>
+                    <p class="text-xs font-bold text-yellow-800">pH Terlalu Basa (Batas: 6.0 - 8.0)</p>
                     <p class="text-xs text-yellow-700 font-medium">Kondisi: ${ph.toFixed(2)} pH — Perlu perhatian!</p>
                 </div>
             </div>`;
