@@ -39,7 +39,7 @@ class RekomendasiController extends Controller
         // Sistem HANYA menembak API Python jika TIDAK sedang dalam masa cooldown
         if ($sensor && !$sedangCooldown) {
             try {
-                $response = Http::timeout(5)->post('https://noxena-gardena-ai.hf.space/predict', [
+                $response = Http::timeout(5)->post('http://127.0.0.1:8001/predict', [
                     'ph'   => (float) $sensor->ph,
                     'tds'  => (float) $sensor->ec_tds,
                     'suhu' => (float) $sensor->suhu,
