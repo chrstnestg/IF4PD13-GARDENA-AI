@@ -1,2 +1,6 @@
+# Sembunyikan file rahasia API Key
+.env
+
+# Sembunyikan file sampah kompilasi Python
 __pycache__/
 *.pyc

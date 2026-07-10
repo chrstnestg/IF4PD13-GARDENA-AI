@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\PerangkatIot;
 use App\Models\DataSensor;
 use App\Models\AnalisisAi;
 
@@ -12,10 +11,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $user     = \App\Models\User::first();
-        $perangkat = PerangkatIot::firstOrCreate(
-            ['id_user' => $user->id, 'nama_device' => 'Perangkat A'],
-            ['status_aktif' => true]
-        );
 
         // 1 data sensor kondisi pH Rendah
         $sensor = DataSensor::create([

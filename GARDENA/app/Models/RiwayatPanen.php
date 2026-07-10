@@ -11,8 +11,7 @@ class RiwayatPanen extends Model
 
     // 2. Sesuaikan amunisi kolom baru untuk mencatat data anomali sensor & AI
     protected $fillable = [
-        'id_user', 
-        'id_device', 
+        'id_user',  
         'status_anomali',   // Hasil gabungan hybrid dari Python (misal: "pH Rendah + Nutrisi Kurang")
         'rekomendasi_ai',   // List tindakan penanganan langsung dari FastAPI Python
         'nilai_ph',         // Nilai pH real-time saat kejadian
@@ -31,8 +30,4 @@ class RiwayatPanen extends Model
         return $this->belongsTo(User::class, 'id_user');
     }
 
-    public function perangkat()
-    {
-        return $this->belongsTo(PerangkatIot::class, 'id_device', 'id_device');
-    }
 }

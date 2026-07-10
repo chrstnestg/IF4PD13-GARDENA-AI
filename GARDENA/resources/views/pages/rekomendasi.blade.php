@@ -1,118 +1,190 @@
 @extends('layouts.app')
-@section('title', 'Rekomendasi')
+@section('title', 'Rekomendasi Asisten AI')
 
 @section('content')
 
 {{-- Alert Kritis --}}
 @if($kondisiAktif && $kondisiAktif['kritis'] && !$sedangCooldown)
-    <div class="bg-red-500 text-white text-xs sm:text-sm font-semibold px-4 sm:px-6 md:px-10 py-3 md:py-3.5 flex items-start sm:items-center gap-2 -mx-4 sm:-mx-6 md:-mx-10 -mt-5 sm:-mt-7 mb-6">
-        <i class="bi bi-exclamation-triangle-fill mt-0.5 sm:mt-0"></i>
-        <span>{{ $kondisiAktif['pesanKritis'] }}</span>
+    <div class="bg-red-500 text-white text-xs sm:text-sm font-semibold px-4 sm:px-6 md:px-10 py-3 md:py-3.5 flex items-start sm:items-center gap-2 -mx-4 sm:-mx-6 md:-mx-10 -mt-5 sm:-mt-7 mb-6 shadow-md">
+        <i class="bi bi-exclamation-triangle-fill mt-0.5 sm:mt-0 animate-bounce"></i>
+        <span>Sistem mendeteksi fluktuasi parameter! Segera ikuti panduan instruksi Asisten AI Gardena di bawah ini.</span>
     </div>
 @endif
 
-{{-- Header --}}
+{{-- Header Dashboard --}}
 <div class="flex items-start justify-between flex-wrap gap-3 sm:gap-4 mb-6">
     <div>
-        <h1 class="font-brand font-bold text-lg sm:text-xl md:text-2xl text-gray-800">Rekomendasi Nutrisi &amp; Perawatan</h1>
+        <h1 class="font-brand font-bold text-lg sm:text-xl md:text-2xl text-gray-800 flex items-center gap-2">
+            <span>✨ Gardena AI Insights</span>
+        </h1>
         <p class="text-xs sm:text-sm text-gray-400 mt-1 flex items-center gap-1.5">
-            <i class="bi bi-calendar3"></i>
-            {{ \Carbon\Carbon::now()->translatedFormat('j F Y') }}
+            <i class="bi bi-robot text-green-500"></i>
+            Analisis Runtun Waktu Real-Time • {{ \Carbon\Carbon::now()->translatedFormat('j F Y') }}
         </p>
     </div>
     <x-health-score :score="$healthScore" :label="$healthLabel" />
 </div>
 
-{{-- ── 1. TAMPILAN JIKA SEDANG COOLDOWN (STATUS JEDA) ── --}}
+{{-- ── 1. STATUS COOLDOWN (Masa Tunggu Sirkulasi Air) ── --}}
 @if($sedangCooldown)
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-8 text-center max-w-2xl mx-auto my-4">
-        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4 animate-pulse">
-            <i class="bi bi-hourglass-split text-xl sm:text-2xl text-gray-500"></i>
+        <div class="w-14 h-14 sm:w-16 sm:h-16 rounded-full bg-green-50 flex items-center justify-center mx-auto mb-4 text-green-600 animate-spin">
+            <i class="bi bi-arrow-clockwise text-xl sm:text-2xl"></i>
         </div>
-        <h2 class="font-brand font-bold text-base sm:text-lg text-gray-800 mb-2">Sistem dalam Masa Tunggu (Cooldown)</h2>
+        <h2 class="font-brand font-bold text-base sm:text-lg text-gray-800 mb-2">Stabilisasi & Sirkulasi Larutan Nutrisi</h2>
         <p class="text-gray-500 text-xs sm:text-sm leading-relaxed max-w-md mx-auto mb-5">
-            Tindakan manual Anda telah dicatat. Sistem memberikan jeda waktu agar larutan nutrisi fisik tercampur merata di dalam tangki air hidroponik.
+            Tindakan perbaikan Anda telah disimpan. Sistem memberikan jeda waktu agar intervensi fisik (seperti penambahan air atau nutrisi) terlarut merata sebelum AI melakukan evaluasi statistik ulang.
         </p>
-
         <div class="inline-block bg-gray-50 border border-gray-200 rounded-xl px-5 sm:px-6 py-2 sm:py-2.5">
-            <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Evaluasi Ulang AI Dalam</p>
+            <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-gray-400 mb-0.5">Analisis Ulang Gemini AI Dalam</p>
             <p id="countdownTimer" class="font-mono font-bold text-lg sm:text-xl text-green-600">05:00</p>
         </div>
     </div>
 
-{{-- ── 2. TAMPILAN JIKA TIDAK ADA DATA ANALISIS ── --}}
+{{-- ── 2. STATUS JIKA KONDISI NORMAL / OPTIMAL ── --}}
 @elseif(!$kondisiAktif)
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-10 text-center">
-        <div class="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-4">
-            <span class="text-3xl sm:text-4xl">📡</span>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="md:col-span-2 bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-10 text-center flex flex-col justify-center items-center">
+            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-full border-[3px] border-green-500 bg-green-50 flex items-center justify-center mb-5">
+                <span class="text-4xl sm:text-5xl">🥬</span>
+            </div>
+            <h2 class="font-brand font-extrabold text-lg sm:text-xl text-gray-800 mb-2">Kondisi Ekosistem Hidroponik Optimal</h2>
+            <p class="text-gray-500 text-sm leading-relaxed max-w-md mx-auto">
+                Berdasarkan evaluasi statistik 30 data runtun waktu terakhir, seluruh parameter pH, TDS, dan Suhu air Sawi Putih berada dalam rentang kendali ideal.
+            </p>
         </div>
-        <p class="text-gray-400 text-sm sm:text-base">Belum ada data analisis. Tunggu sensor mengirim data.</p>
+        
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between">
+            <div>
+                <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Target Regulasi Sawi</h3>
+                <div class="space-y-2 text-xs">
+                    <div class="flex justify-between py-1.5 border-b border-gray-50">
+                        <span class="text-gray-500">Derajat Keasaman (pH)</span>
+                        <span class="font-semibold text-gray-700">6.0 - 8.0</span>
+                    </div>
+                    <div class="flex justify-between py-1.5 border-b border-gray-50">
+                        <span class="text-gray-500">Kepekatan Nutrisi (TDS)</span>
+                        <span class="font-semibold text-gray-700">400 - 1200 ppm</span>
+                    </div>
+                    <div class="flex justify-between py-1.5 border-b border-gray-50">
+                        <span class="text-gray-500">Suhu Air Ideal</span>
+                        <span class="font-semibold text-gray-700">20°C - 28°C</span>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 p-3 rounded-xl text-[11px] text-gray-400 mt-4">
+                <i class="bi bi-info-circle"></i> Sistem AI memantau perubahan tren linier secara berkala untuk mencegah anomali tanaman sejak dini.
+            </div>
+        </div>
     </div>
 
-{{-- ── 3. TAMPILAN KONDISI NORMAL ── --}}
-@elseif($kondisiAktif['isNormal'])
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 sm:p-10 text-center">
-        <div class="w-20 h-20 sm:w-28 sm:h-28 rounded-full border-[3px] border-green-500 bg-green-50 flex items-center justify-center mx-auto mb-5 sm:mb-6">
-            <span class="text-4xl sm:text-5xl">🥬</span>
-        </div>
-        <h2 class="font-brand font-extrabold text-lg sm:text-2xl text-gray-800 mb-3">Tanaman Anda Berada dalam Kondisi Optimal</h2>
-        <p class="text-gray-500 text-sm sm:text-base leading-relaxed max-w-md mx-auto mb-6 sm:mb-8">
-            Semua parameter (TDS, pH, dan suhu) berada dalam rentang ideal. Tanaman sawi putih Anda tumbuh sehat dan stabil.
-        </p>
-        <p class="text-xs sm:text-sm font-semibold text-gray-500 text-left max-w-2xl mx-auto mb-3">
-            <i class="bi bi-graph-up-arrow text-green-500 me-1"></i> <strong>7 Hari Terakhir</strong>
-        </p>
-        <div class="max-w-2xl mx-auto h-40 sm:h-44 overflow-x-auto">
-            <canvas id="stabilityChart" class="min-w-[280px]"></canvas>
-        </div>
-    </div>
-
-{{-- ── 4. TAMPILAN KONDISI BERMASALAH (ADA TOMBOL) ── --}}
-@else
-    <p class="text-[10px] sm:text-[11px] font-bold uppercase tracking-widest text-gray-400 mb-4">Kondisi Saat Ini</p>
+    {{-- Grafik Tren Kestabilan --}}
     <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4 sm:p-6">
-        <div class="flex items-start sm:items-center justify-between gap-2 mb-4 flex-wrap">
-            <h2 class="font-brand font-bold text-base sm:text-xl text-gray-800">{{ $kondisiAktif['judul'] }}</h2>
-            <span @class([
-                'text-[10px] sm:text-xs font-bold px-2.5 sm:px-3 py-1 rounded-full whitespace-nowrap',
-                'bg-red-100 text-red-600'       => $kondisiAktif['labelStatus'] === 'Kritis',
-                'bg-orange-100 text-orange-600'  => $kondisiAktif['labelStatus'] === 'Peringatan',
-                'bg-yellow-100 text-yellow-600'  => $kondisiAktif['labelStatus'] === 'Perlu Perhatian',
-                'bg-green-100 text-green-600'    => $kondisiAktif['labelStatus'] === 'Optimal',
-            ])>
-                {{ $kondisiAktif['labelStatus'] }}
-            </span>
+        <p class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 flex items-center gap-1">
+            <i class="bi bi-graph-up-arrow text-green-500"></i> Tren Rata-Rata Parameter 7 Hari Terakhir
+        </p>
+        <div class="h-56 sm:h-64 overflow-x-auto">
+            <canvas id="stabilityChart" class="min-w-[300px]"></canvas>
+        </div>
+    </div>
+
+{{-- ── 3. STATUS JIKA TERDETEKSI ANOMALI OLEH GEMINI AI (BAGIAN YANG DIUBAH) ── --}}
+@else
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {{-- Kolom Kiri: Ringkasan Analisis Naratif Berstruktur Lengkap --}}
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 sm:p-6">
+                <div class="flex items-center justify-between gap-2 mb-4">
+                    <span class="text-xs font-bold uppercase tracking-wider text-gray-400">Hasil Temuan Komprehensif AI</span>
+                    <span class="text-[10px] sm:text-xs font-bold px-3 py-1 rounded-full {{ $kondisiAktif['bgLabelClass'] }}">
+                        {{ $kondisiAktif['labelStatus'] }}
+                    </span>
+                </div>
+
+                {{-- Urutan Blok Narasi dari Hasil JSON FastAPI --}}
+                <div class="bg-gradient-to-r from-green-50/40 to-blue-50/10 border border-gray-100 rounded-xl p-4 mb-4 space-y-4">
+                    {{-- 1. Summary --}}
+                    <div class="flex gap-3">
+                        <div class="text-xl p-0.5 flex-shrink-0">📋</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-0.5 tracking-wide">Ringkasan Eksekutif:</h4>
+                            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed font-medium">
+                                {{ $kondisiAktif['summary'] }}
+                            </p>
+                        </div>
+                    </div>
+
+                    {{-- 2. Trend Analysis --}}
+                    @if(!empty($kondisiAktif['trend']))
+                    <div class="flex gap-3 border-t border-gray-100 pt-3">
+                        <div class="text-xl p-0.5 flex-shrink-0">📈</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-0.5 tracking-wide">Analisis Tren Runtun Waktu:</h4>
+                            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                {{ $kondisiAktif['trend'] }}
+                            </p>
+                        </div>
+                    </div>
+                    @endif
+
+                    {{-- 3. Pattern Analysis --}}
+                    @if(!empty($kondisiAktif['pattern']))
+                    <div class="flex gap-3 border-t border-gray-100 pt-3">
+                        <div class="text-xl p-0.5 flex-shrink-0">🔗</div>
+                        <div>
+                            <h4 class="text-xs font-bold text-gray-400 uppercase mb-0.5 tracking-wide">Analisis Pola & Korelasi:</h4>
+                            <p class="text-xs sm:text-sm text-gray-600 leading-relaxed">
+                                {{ $kondisiAktif['pattern'] }}
+                            </p>
+                        </div>
+                    </div>
+                    @endif
+                </div>
+
+                {{-- Komparasi Angka Monitor --}}
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-2 text-xs">
+                    <div class="bg-gray-50 border border-gray-100 rounded-xl p-3">
+                        <p class="text-gray-400 font-medium mb-1">Nilai Aktual Terakhir</p>
+                        <p class="font-mono font-bold text-gray-700">{{ $kondisiAktif['nilaiSaatIni'] }}</p>
+                    </div>
+                    <div class="bg-green-50/60 border border-green-100/50 rounded-xl p-3">
+                        <p class="text-green-500 font-medium mb-1">Threshold Batas Ideal</p>
+                        <p class="font-mono font-bold text-green-700">{{ $kondisiAktif['nilaiOptimal'] }}</p>
+                    </div>
+                </div>
+            </div>
         </div>
 
-        <div class="grid grid-cols-2 gap-2 sm:gap-4 mb-4 text-xs sm:text-sm">
-            <div class="bg-gray-50 rounded-lg sm:rounded-xl p-3 sm:p-4 min-w-0">
-                <p class="text-gray-400 text-[10px] sm:text-xs mb-1">Nilai Saat Ini</p>
-                <p class="font-semibold text-gray-700 break-words">{{ $kondisiAktif['nilaiSaatIni'] }}</p>
-            </div>
-            <div class="bg-green-50 rounded-lg sm:rounded-xl p-3 sm:p-4 min-w-0">
-                <p class="text-gray-400 text-[10px] sm:text-xs mb-1">Nilai Optimal</p>
-                <p class="font-semibold text-green-700 break-words">{{ $kondisiAktif['nilaiOptimal'] }}</p>
+        {{-- Kolom Kapan: Daftar Rekomendasi Aksi Tindakan --}}
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col justify-between h-full">
+                <div>
+                    <p class="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">Rekomendasi Tindakan Operasional:</p>
+                    <ul class="space-y-3">
+                        @foreach($kondisiAktif['aksiList'] as $aksi)
+                            @if(trim($aksi))
+                            <li class="flex items-start gap-2.5 text-xs sm:text-sm text-gray-600 bg-gray-50/50 p-2.5 rounded-lg border border-gray-100">
+                                <i class="bi bi-check2-circle text-green-600 font-bold mt-0.5 flex-shrink-0"></i>
+                                <span class="leading-relaxed">{{ ltrim($aksi, '0123456789. ') }}</span>
+                            </li>
+                            @endif
+                        @endforeach
+                    </ul>
+                </div>
+
+                <div class="mt-6">
+                    <form id="formSelesai" method="POST" action="{{ route('rekomendasi.selesai') }}">
+                        @csrf
+                        <input type="hidden" name="nutrisi_id" value="{{ $kondisiAktif['id'] }}">
+                        <button type="button" id="btnSelesai" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold text-sm py-3 rounded-xl transition shadow-sm flex items-center justify-center gap-2">
+                            <i class="bi bi-check-lg"></i> Sudah Saya Tangani
+                        </button>
+                    </form>
+                </div>
             </div>
         </div>
 
-        <p class="text-xs sm:text-sm text-gray-500 bg-gray-50 rounded-xl px-3 sm:px-4 py-3 mb-4">{{ $kondisiAktif['deskripsi'] }}</p>
-
-        <p class="text-[10px] sm:text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Yang Harus Dilakukan:</p>
-        <ul class="mb-6 space-y-2">
-            @foreach($kondisiAktif['aksiList'] as $i => $aksi)
-                <li class="flex items-start gap-2 text-xs sm:text-sm text-gray-600">
-                    <span class="font-bold text-green-600 flex-shrink-0">{{ $i + 1 }}.</span> <span>{{ $aksi }}</span>
-                </li>
-            @endforeach
-        </ul>
-
-        <form id="formSelesai" method="POST" action="{{ route('rekomendasi.selesai') }}">
-            @csrf
-            <input type="hidden" name="nutrisi_id" value="{{ $kondisiAktif['id'] }}">
-            <button type="button" id="btnSelesai" class="w-full bg-green-600 hover:bg-green-700 text-white font-semibold text-sm sm:text-base py-2.5 sm:py-3 rounded-xl transition">
-                Sudah Ditangani
-            </button>
-        </form>
     </div>
 @endif
 
@@ -124,7 +196,7 @@
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ── HITUNG MUNDUR COOLDOWN (FIXED FORMAT INTEGER) ──
+    // ── COUNTDOWN COOLDOWN TIMER ──
     @if($sedangCooldown && $sisaDetikCooldown > 0)
         let totalDetik = Math.floor({{ $sisaDetikCooldown }});
         const timerElement = document.getElementById('countdownTimer');
@@ -146,30 +218,30 @@ document.addEventListener('DOMContentLoaded', () => {
         }, 1000);
     @endif
 
-    // ── Chart 7 Hari ──
-    @if($kondisiAktif && $kondisiAktif['isNormal'])
+    // ── CHART 7 HARI ──
+    @if(!$kondisiAktif)
     new Chart(document.getElementById('stabilityChart'), {
         type: 'line',
         data: {
             labels: @json($chartLabels),
             datasets: [
-                { label:'TDS',  data:@json($chartTds),  borderColor:'#2d9a4f', borderWidth:2.5, pointRadius:4, tension:0.3, fill:false },
-                { label:'pH',   data:@json($chartPh),   borderColor:'#38bdf8', borderWidth:2.5, pointRadius:4, tension:0.3, fill:false },
-                { label:'Suhu', data:@json($chartSuhu), borderColor:'#fb923c', borderWidth:2.5, pointRadius:4, tension:0.3, fill:false },
+                { label:'TDS (ppm)',  data:@json($chartTds),  borderColor:'#2d9a4f', borderWidth:2.5, pointRadius:4, tension:0.3, fill:false },
+                { label:'pH Air',     data:@json($chartPh),   borderColor:'#38bdf8', borderWidth:2.5, pointRadius:4, tension:0.3, fill:false },
+                { label:'Suhu (°C)',  data:@json($chartSuhu), borderColor:'#fb923c', borderWidth:2.5, pointRadius:4, tension:0.3, fill:false },
             ]
         },
         options: {
             responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: true } },
+            plugins: { legend: { display: true, labels: { boxWidth:12, font:{size:11} } } },
             scales: {
-                x: { grid:{ color:'rgba(0,0,0,0.04)' }, ticks:{ font:{size:11}, color:'#94a3b8' } },
-                y: { grid:{ color:'rgba(0,0,0,0.04)' }, ticks:{ font:{size:11}, color:'#94a3b8' } }
+                x: { grid:{ color:'rgba(0,0,0,0.02)' }, ticks:{ font:{size:11}, color:'#94a3b8' } },
+                y: { grid:{ color:'rgba(0,0,0,0.02)' }, ticks:{ font:{size:11}, color:'#94a3b8' } }
             }
         }
     });
     @endif
 
-    // ── Konfirmasi SweetAlert ──
+    // ── KONFIRMASI SWEETALERT ──
     const btnSelesai = document.getElementById('btnSelesai');
     const formSelesai = document.getElementById('formSelesai');
 
@@ -177,30 +249,31 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSelesai.addEventListener('click', () => {
             Swal.fire({
                 icon: 'question',
-                title: 'Konfirmasi Tindakan',
-                text: 'Apakah kamu sudah benar-benar menangani masalah ini?',
+                title: 'Konfirmasi Perbaikan',
+                text: 'Apakah Anda telah menyesuaikan tangki fisik sesuai instruksi AI?',
                 showCancelButton: true,
-                confirmButtonText: 'Ya, Sudah Ditangani',
-                cancelButtonText: 'Belum',
+                confirmButtonText: 'Ya, Selesai Ditangani',
+                cancelButtonText: 'Kembali',
                 confirmButtonColor: '#16a34a',
                 cancelButtonColor: '#6b7280',
             }).then(result => {
                 if (result.isConfirmed) {
-                    formSelesai.style.display = 'none';
+                    btnSelesai.disabled = true;
+                    btnSelesai.innerHTML = `<i class="bi bi-hourglass-split animate-spin"></i> Menyimpan...`;
                     formSelesai.submit();
                 }
             });
         });
     }
 
-    // ── Notifikasi Sukses Setelah Redirect ──
+    // ── ALERT BANNER NOTIFIKASI ──
     @if(session('swal'))
     Swal.fire({
         icon:  '{{ session("swal.icon") }}',
         title: '{{ session("swal.title") }}',
         text:  '{{ session("swal.text") }}',
         confirmButtonColor: '#16a34a',
-        timer: 3000,
+        timer: 4000,
         timerProgressBar: true,
     });
     @endif

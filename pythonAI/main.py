@@ -1,121 +1,226 @@
+import os
+import json
+import re
+import time
+from typing import List
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
+import pandas as pd
 import numpy as np
-import pickle
-from tensorflow.keras.models import load_model
+from scipy import stats
+from google import genai
+from google.genai import types
+from dotenv import load_dotenv
+
+load_dotenv()
 
 app = FastAPI()
 
-try:
-    model = load_model('model_gardena_mlp.h5')
-    with open('scaler_mlp.pkl', 'rb') as f:
-        scaler = pickle.load(f)
-    with open('label_encoder_mlp.pkl', 'rb') as f:
-        label_encoder = pickle.load(f)
-except Exception as e:
-    print(f"Error saat memuat model/scaler: {str(e)}")
+GOOGLE_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# ════════ MASTER DATA REKOMENDASI SATUAN (THRESHOLD SAWI PUTIH BARU) ════════
-REKOMENDASI_BASE = {
-    'Normal': [
-        'Kondisi nutrisi optimal, pertahankan kadar TDS saat ini.',
-        'Lakukan pengecekan rutin setiap hari.',
-    ],
-    'Nutrisi Kurang': [
-        'Tambahkan larutan nutrisi AB Mix ke dalam tangki.',
-        'Cek TDS hingga mencapai minimal 400 ppm (Ideal: 400-1200 ppm).',
-    ],
-    'Nutrisi Berlebih': [
-        'Encerkan larutan dengan menambahkan air bersih ke tandon.',
-        'Cek TDS hingga berada di bawah 1200 ppm.',
-    ],
-    'pH Rendah': [
-        'Tambahkan larutan pH Up secara bertahap.',
-        'Target pH ideal Sawi Putih antara 6.0 hingga 8.0.',
-    ],
-    'pH Tinggi': [
-        'Tambahkan larutan pH Down secara bertahap.',
-        'Target pH ideal Sawi Putih antara 6.0 hingga 8.0.',
-    ],
-    'Suhu Tidak Ideal': [
-        'Periksa sirkulasi air tandon dan ventilasi area tanam.',
-        'Pastikan suhu air berada di kisaran hangat ideal sawi yaitu 20–28°C.',
-    ],
-}
+client = None
+if not GOOGLE_API_KEY:
+    print("Peringatan: GEMINI_API_KEY tidak ditemukan di file .env!")
+else:
+    client = genai.Client(api_key=GOOGLE_API_KEY)
 
-class SensorInput(BaseModel):
+# Pakai model lite: quota gratis jauh lebih besar (ratusan-ribuan request/hari)
+# dibanding gemini-flash-latest yang cuma ~20/hari untuk generasi terbaru
+GEMINI_MODEL = "gemini-flash-lite-latest"
+
+class SensorItem(BaseModel):
     ph: float
-    tds: float
     suhu: float
+    ec_tds: float
 
-@app.post("/predict")
-def predict(input: SensorInput):
-    try:
-        # 1. Prediksi Kelas Utama Menggunakan AI MLP 96%
-        raw_features = np.array([[input.ph, input.tds, input.suhu]])
-        scaled_features = scaler.transform(raw_features)
-        
-        prediction = model.predict(scaled_features)
-        predicted_class_index = np.argmax(prediction, axis=1)[0]
-        kondisi_utama = label_encoder.inverse_transform([predicted_class_index])[0]
-        
-        # 2. Logika Hybrid & Perhitungan Health Score Berdasarkan Kondisi Riil Sawi Putih
-        rekomendasi_gabungan = []
-        status_terdeteksi = []
-        skor_kesehatan = 100  # Mulai dari poin sempurna
+class HistoricalPayload(BaseModel):
+    id_sensor: int
+    history: List[SensorItem]
 
-        # Cek Masalah pH (Threshold Baru: 6.0 - 8.0)
-        if input.ph < 6.0:
-            rekomendasi_gabungan.extend(REKOMENDASI_BASE['pH Rendah'])
-            status_terdeteksi.append('pH Rendah')
-            skor_kesehatan -= 20
-        elif input.ph > 8.0:
-            rekomendasi_gabungan.extend(REKOMENDASI_BASE['pH Tinggi'])
-            status_terdeteksi.append('pH Tinggi')
-            skor_kesehatan -= 15
+def analyze_parameter(series, low_th, high_th, total_readings):
+    avg_val = float(series.mean())
+    min_val = float(series.min())
+    max_val = float(series.max())
+    median_val = float(series.median())
 
-        # Cek Masalah TDS (Threshold Baru: 400 - 1200 ppm)
-        if input.tds < 400:
-            rekomendasi_gabungan.extend(REKOMENDASI_BASE['Nutrisi Kurang'])
-            status_terdeteksi.append('Nutrisi Kurang')
-            skor_kesehatan -= 25
-        elif input.tds > 1200:
-            rekomendasi_gabungan.extend(REKOMENDASI_BASE['Nutrisi Berlebih'])
-            status_terdeteksi.append('Nutrisi Berlebih')
-            skor_kesehatan -= 15
+    std_val = float(series.std()) if len(series) > 1 else 0.0
+    if np.isnan(std_val):
+        std_val = 0.0
 
-        # Cek Masalah Suhu (Threshold Baru: 20 - 28 °C)
-        if input.suhu < 20 or input.suhu > 28:
-            rekomendasi_gabungan.extend(REKOMENDASI_BASE['Suhu Tidak Ideal'])
-            status_terdeteksi.append('Suhu Tidak Ideal')
-            skor_kesehatan -= 20
+    in_range_count = int(((series >= low_th) & (series <= high_th)).sum())
+    stability_pct = round((in_range_count / total_readings) * 100, 2) if total_readings > 0 else 0.0
 
-        # Kunci skor kesehatan agar tidak minus
-        health_score_final = max(0, skor_kesehatan)
-
-        # 3. Finalisasi Status Kondisi
-        if not status_terdeteksi:
-            kondisi_final = "Normal"
-            rekomendasi_gabungan = REKOMENDASI_BASE['Normal']
-            status_tanaman = "Optimal"
+    x = np.arange(len(series))
+    if len(series) > 1 and std_val > 0:
+        slope, intercept, r_value, p_value, std_err = stats.linregress(x, series)
+        r_squared = float(r_value**2) if not np.isnan(r_value) else 0.0
+        if p_value < 0.05 and abs(slope) > 1e-4:
+            direction = "increasing" if slope > 0 else "decreasing"
         else:
-            kondisi_final = " + ".join(status_terdeteksi)
-            status_tanaman = "Sedang" if health_score_final >= 50 else "Buruk"
+            direction = "stable"
+    else:
+        slope, r_squared, direction = 0.0, 0.0, "stable"
 
-        # 4. Return Output (Sekarang menyertakan data Health Score untuk Laravel)
-        return {
-            "status": "success",
-            "kondisi": kondisi_final,
-            "confidence": round(float(np.max(prediction)) * 100, 2),
-            "rekomendasi": rekomendasi_gabungan,
-            "health_score": health_score_final,      # Amunisi baru biar web gak stuck!
-            "status_tanaman": status_tanaman         # Status Teks: Optimal / Sedang / Buruk
+    return {
+        "average": round(avg_val, 3),
+        "minimum": round(min_val, 2),
+        "maximum": round(max_val, 2),
+        "median": round(median_val, 2),
+        "std_dev": round(std_val, 3),
+        "stability_percentage": stability_pct,
+        "trend": {
+            "direction": direction,
+            "slope_per_reading": float(slope),
+            "r_squared": round(r_squared, 3)
         }
+    }
+
+def extract_json(raw_text):
+    """
+    Gemini kadang membungkus JSON dengan markdown fences (```json ... ```)
+    atau menambahkan teks ekstra walau sudah diminta response_mime_type=json.
+    Fungsi ini membersihkan itu sebelum parsing.
+    """
+    text = raw_text.strip()
+
+    text = re.sub(r"^```(?:json)?\s*", "", text)
+    text = re.sub(r"\s*```$", "", text)
+    text = text.strip()
+
+    try:
+        return json.loads(text)
+    except json.JSONDecodeError:
+        pass
+
+    start = text.find("{")
+    end = text.rfind("}")
+    if start != -1 and end != -1 and end > start:
+        candidate = text[start:end + 1]
+        return json.loads(candidate)
+
+    raise ValueError(f"Tidak bisa parse JSON dari respons Gemini. Raw text: {raw_text[:300]}")
+
+def call_gemini_with_retry(prompt, max_retries=3):
+    last_error = None
+    for attempt in range(max_retries):
+        try:
+            return client.models.generate_content(
+                model=GEMINI_MODEL,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+        except Exception as e:
+            last_error = e
+            error_text = str(e)
+
+            if "429" in error_text or "RESOURCE_EXHAUSTED" in error_text:
+                raise HTTPException(
+                    status_code=429,
+                    detail="Quota Gemini API harian/menit sudah habis. Tunggu beberapa saat atau cek AI Studio untuk reset quota."
+                )
+
+            if ("503" in error_text or "UNAVAILABLE" in error_text) and attempt < max_retries - 1:
+                wait_time = 3 * (attempt + 1)
+                print(f"Gemini sibuk (percobaan {attempt + 1}/{max_retries}), tunggu {wait_time}s...")
+                time.sleep(wait_time)
+                continue
+            raise e
+    raise last_error
+
+@app.post("/historical-insight")
+def process_historical_insight(payload: HistoricalPayload):
+    try:
+        if not client:
+            raise HTTPException(status_code=500, detail="Gemini Client belum terinisialisasi.")
+
+        if not payload.history:
+            raise HTTPException(status_code=400, detail="Data historis kosong.")
+
+        raw_data = [{"ph": item.ph, "suhu": item.suhu, "ec_tds": item.ec_tds} for item in payload.history]
+        df = pd.DataFrame(raw_data)
+        total_readings = len(df)
+
+        ph_warn = ((df['ph'] < 6.0) | (df['ph'] > 8.0)).sum()
+        tds_warn = ((df['ec_tds'] < 400) | (df['ec_tds'] > 1200)).sum()
+        suhu_warn = ((df['suhu'] < 20) | (df['suhu'] > 28)).sum()
+        total_warnings = int(ph_warn + tds_warn + suhu_warn)
+
+        stats_ph = analyze_parameter(df['ph'], 6.0, 8.0, total_readings)
+        stats_tds = analyze_parameter(df['ec_tds'], 400, 1200, total_readings)
+        stats_suhu = analyze_parameter(df['suhu'], 20, 28, total_readings)
+
+        corr_ph_tds = float(df['ph'].corr(df['ec_tds'])) if total_readings > 1 and df['ph'].std() > 0 and df['ec_tds'].std() > 0 else 0.0
+        corr_suhu_ph = float(df['suhu'].corr(df['ph'])) if total_readings > 1 and df['suhu'].std() > 0 and df['ph'].std() > 0 else 0.0
+        corr_suhu_tds = float(df['suhu'].corr(df['ec_tds'])) if total_readings > 1 and df['suhu'].std() > 0 and df['ec_tds'].std() > 0 else 0.0
+
+        corr_ph_tds = 0.0 if np.isnan(corr_ph_tds) else corr_ph_tds
+        corr_suhu_ph = 0.0 if np.isnan(corr_suhu_ph) else corr_suhu_ph
+        corr_suhu_tds = 0.0 if np.isnan(corr_suhu_tds) else corr_suhu_tds
+
+        avg_stability = (stats_ph['stability_percentage'] + stats_tds['stability_percentage'] + stats_suhu['stability_percentage']) / 3
+        if avg_stability >= 75:
+            risk_level = "low"
+        elif avg_stability >= 45:
+            risk_level = "medium"
+        else:
+            risk_level = "high"
+
+        analytics_summary = {
+            "meta": {"total_readings_used": total_readings},
+            "total_warnings_detected": total_warnings,
+            "risk_level": risk_level,
+            "ph": stats_ph,
+            "tds": stats_tds,
+            "suhu": stats_suhu,
+            "correlations": {
+                "ph_and_tds": round(corr_ph_tds, 3),
+                "suhu_and_ph": round(corr_suhu_ph, 3),
+                "suhu_and_tds": round(corr_suhu_tds, 3)
+            }
+        }
+
+        prompt = f"""
+        Kamu adalah asisten AI yang membantu petani hidroponik Sawi Putih memahami kondisi tanaman mereka.
+
+        THRESHOLD IDEAL YANG WAJIB KAMU PAKAI (jangan buat angka sendiri):
+        - pH ideal: 6.0 - 8.0
+        - TDS ideal: 400 - 1200 ppm
+        - Suhu ideal: 20 - 28°C
+
+        DATA STATISTIK HASIL PEMBACAAN SENSOR:
+        {json.dumps(analytics_summary, indent=2)}
+
+        ATURAN BAHASA:
+        - Tulis dengan bahasa Indonesia yang santai dan mudah dipahami petani awam, seperti menjelaskan ke teman, BUKAN bahasa laporan ilmiah/akademik.
+        - Hindari istilah teknis statistik (jangan sebut "slope", "r_squared", "std_dev", dsb). Kalau perlu jelaskan tren, cukup bilang "naik", "turun", atau "stabil".
+        - Kalimat pendek-pendek, langsung ke inti.
+        - SELALU pakai angka threshold di atas kalau menyebut batas ideal — jangan buat angka baru.
+
+        ATURAN OUTPUT:
+        - Balas HANYA dengan objek JSON murni, TANPA markdown code fence, TANPA teks tambahan sebelum/sesudahnya.
+        - Wajib menghasilkan objek JSON dengan key berikut:
+        - "summary": string (2-3 kalimat, kondisi sistem secara umum, bahasa santai)
+        - "trend_analysis": string (arah tren tiap parameter dalam bahasa awam, sebut hanya naik/turun/stabil dan seberapa stabil)
+        - "pattern_analysis": string (hubungan antar parameter dalam bahasa awam, contoh: "waktu suhu naik, biasanya pH ikut turun")
+        - "recommendation": array of string (tindakan konkret, singkat, actionable, urut dari prioritas tertinggi)
+        - "risk": string (Hanya bernilai "low", "medium", atau "high" — WAJIB salah satu dari tiga ini persis, jangan diterjemahkan)
+        """
+
+        response = call_gemini_with_retry(prompt)
+        ai_json = extract_json(response.text)
+
+        ai_json["statistics"] = analytics_summary
+        ai_json["id_sensor"] = payload.id_sensor
+
+        return ai_json
+
+    except HTTPException:
+        raise
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == '__main__':
-    import os
     import uvicorn
-    port = int(os.environ.get("PORT", 8001))
-    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
+    uvicorn.run("main:app", host="0.0.0.0", port=8001, reload=True)
