@@ -391,7 +391,7 @@ async function updateSensor() {
             updateTextEl.innerHTML = `Update terakhir: ${dibacaPada.toLocaleDateString('id-ID', timeFormat)} WIB`;
         }
 
-        // 🔴 UPDATE DYNAMIC BADGES & ALERTS DENGAN STYLE KONTRAST
+        // UPDATE DYNAMIC BADGES & ALERTS DENGAN STYLE KONTRAST
         updateStatusBadgesAndAlerts(suhu, tds, ph);
 
         const timeNow = dibacaPada.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });

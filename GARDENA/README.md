@@ -1,59 +1,211 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# GARDENA-AI
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+GARDENA-AI adalah sistem monitoring nutrisi hidroponik skala mikro berbasis Internet of Things (IoT) yang memanfaatkan ESP32, sensor pH, sensor TDS, dan sensor suhu DS18B20. Sistem ini mengirimkan data sensor secara real-time ke aplikasi berbasis Laravel melalui REST API sehingga pengguna dapat memantau kondisi larutan nutrisi dan memperoleh rekomendasi untuk menjaga kualitas nutrisi tanaman.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+# Fitur
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+- Monitoring nilai pH secara real-time.
+- Monitoring nilai TDS (Total Dissolved Solids).
+- Monitoring suhu larutan nutrisi.
+- Dashboard monitoring berbasis web.
+- Penyimpanan data sensor ke database MySQL.
+- Komunikasi data menggunakan REST API.
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+---
 
-## Learning Laravel
+# Teknologi yang Digunakan
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Backend
+- Laravel 12
+- PHP 8.3 / 8.2
+- MySQL
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Frontend
+- HTML
+- CSS
+- Bootstrap
+- JavaScript
 
-## Laravel Sponsors
+## IoT
+- ESP32
+- Arduino IDE
+- Sensor pH
+- Sensor TDS
+- DS18B20
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+---
 
-### Premium Partners
+# Persyaratan Sistem
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+Pastikan perangkat telah terinstal:
 
-## Contributing
+- PHP 8.2
+- Composer
+- Node.js
+- MySQL
+- Arduino IDE
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+---
 
-## Code of Conduct
+# Instalasi Backend
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+Clone repository
 
-## Security Vulnerabilities
+```bash
+git clone https://github.com/chrstnestg/IF4PD13-GARDENA-AI
+```
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+Masuk ke folder project
 
-## License
+```bash
+cd GARDENA-AI
+```
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+Install dependency
+
+```bash
+composer install
+```
+
+Copy file environment
+
+```bash
+cp .env.example .env
+```
+
+Generate application key
+
+```bash
+php artisan key:generate
+```
+
+Konfigurasi database pada file `.env`
+
+```env
+DB_DATABASE=gardena
+DB_USERNAME=root
+DB_PASSWORD=
+```
+
+Migrasi database
+
+```bash
+php artisan migrate
+```
+
+Jalankan server
+
+```bash
+php artisan serve
+```
+
+---
+
+# Setup ESP32
+
+Buka file program pada Arduino IDE.
+
+Ubah konfigurasi jaringan Wi-Fi.
+
+```cpp
+const char* ssid = "Nama_WiFi";
+const char* password = "Password_WiFi";
+```
+
+Atur alamat REST API.
+
+```cpp
+const char* serverURL = "http://alamat-server/api/sensor";
+```
+
+Upload program ke ESP32 menggunakan Arduino IDE.
+
+---
+
+#  Wiring Perangkat
+
+| Sensor | ESP32 |
+|---------|--------|
+| Sensor pH | GPIO34 |
+| Sensor TDS | GPIO35 |
+| DS18B20 DATA | GPIO4 |
+| VCC | VIN / 3.3V (sesuai modul) |
+| GND | GND |
+
+---
+
+# REST API
+
+## Endpoint
+
+```
+POST /api/sensor
+```
+
+## Header
+
+```
+Content-Type: application/json
+```
+
+## Request Body
+
+```json
+{
+    "id_device":3,
+    "suhu":27.50,
+    "ph":6.80,
+    "ec_tds":920
+}
+```
+
+## Contoh Pengiriman Data ESP32
+
+```cpp
+HTTPClient http;
+http.begin(serverURL);
+http.addHeader("Content-Type","application/json");
+
+String jsonData = "{\"id_device\":3"
+                  ",\"suhu\":" + String(suhu,2)
+                  + ",\"ph\":" + String(ph,2)
+                  + ",\"ec_tds\":" + String(tds,2) + "}";
+
+http.POST(jsonData);
+```
+
+---
+
+# Cara Menjalankan Sistem
+
+1. Jalankan MySQL.
+2. Jalankan Laravel menggunakan `php artisan serve`.
+3. Hubungkan ESP32 ke jaringan Wi-Fi.
+4. Upload program ESP32.
+5. Pastikan data sensor berhasil dikirim ke REST API.
+6. Buka dashboard monitoring pada browser.
+
+---
+
+# Tim Pengembang
+
+- **Irene Kristi Syari Rani Samosir**
+  - IoT Developer
+  - UI/UX Designer
+  - Frontend Developer
+  - Backend Developer
+
+- **Christine Thalia Elisabeth Sitanggang**
+  - AI Engineer
+  - UI/UX Designer
+  - Frontend Developer
+  - Backend Developer
+
+
+---
+
+# Lisensi
+
+Project ini dikembangkan sebagai Project Based Learning (PBL) Program Studi Teknik Informatika, Politeknik Negeri Batam.

@@ -9,9 +9,7 @@ use App\Models\User;
 
 class AuthController extends Controller
 {
-    // =========================
     // REGISTER
-    // =========================
     public function register(Request $request)
     {
         $request->validate([
@@ -39,7 +37,7 @@ class AuthController extends Controller
             'password.regex'       => 'Password harus mengandung huruf besar, kecil, angka, dan simbol.',
         ]);
 
-        // 🔥 SIMPAN KE DATABASE
+        // SIMPAN KE DATABASE
         User::create([
             'name'     => $request->nama,
             'username' => $request->username,
@@ -50,9 +48,7 @@ class AuthController extends Controller
         return redirect('/login')->with('success', 'Akun berhasil dibuat! Silakan login.');
     }
 
-    // =========================
     // LOGIN
-    // =========================
     public function login(Request $request)
     {
         $request->validate([
@@ -70,7 +66,7 @@ class AuthController extends Controller
         ])) {
             $request->session()->regenerate();
             
-            // 🔴 DIUBAH: Redirect kembali ke halaman login membawa flash session sukses login
+            // DIUBAH: Redirect kembali ke halaman login membawa flash session sukses login
             return redirect('/login')->with('login_success', 'Anda berhasil masuk ke sistem!');
         }
 
@@ -79,9 +75,7 @@ class AuthController extends Controller
         ])->withInput();
     }
 
-    // =========================
     // LOGOUT
-    // =========================
     public function logout(Request $request)
     {
         Auth::logout();
